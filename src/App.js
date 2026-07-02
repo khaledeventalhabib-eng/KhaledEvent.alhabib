@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Activity,
   Users,
@@ -11,22 +11,18 @@ import {
   ArrowRightLeft,
   Plus,
   Trash2,
-  Timer,
   TrendingUp,
   TrendingDown,
   Minus,
   Download,
-  AlertTriangle,
-  CheckCircle,
-  ArrowUp,
-  ArrowDown,
-  Target,
   Printer,
+  Eye,
+  CalendarDays,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   ComposedChart,
   Bar,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -35,16 +31,13 @@ import {
   Pie,
   Cell,
   Legend,
-  ReferenceLine,
 } from "recharts";
 
 export default function KPIDashboard() {
-  const TARGET_RESPONSE = 5;
-
   const [rows, setRows] = useState([
     {
       id: 1,
-      date: "2025-01",
+      date: "2026-07-01",
       event: "Season Opening",
       events: 1,
       paramedics: 12,
@@ -55,11 +48,11 @@ export default function KPIDashboard() {
       clinics: 5,
       patients: 240,
       transferred: 8,
-      response: 6.5,
+      visitors: 12000,
     },
     {
       id: 2,
-      date: "2025-02",
+      date: "2026-08-01",
       event: "Fun Festival",
       events: 2,
       paramedics: 15,
@@ -70,11 +63,11 @@ export default function KPIDashboard() {
       clinics: 6,
       patients: 310,
       transferred: 11,
-      response: 5.2,
+      visitors: 18500,
     },
     {
       id: 3,
-      date: "2025-03",
+      date: "2026-09-01",
       event: "Season Closing",
       events: 3,
       paramedics: 20,
@@ -85,7 +78,22 @@ export default function KPIDashboard() {
       clinics: 8,
       patients: 420,
       transferred: 15,
-      response: 4.8,
+      visitors: 25000,
+    },
+    {
+      id: 4,
+      date: "2027-07-01",
+      event: "Season 2027 Opening",
+      events: 1,
+      paramedics: 14,
+      nurses: 20,
+      doctors: 7,
+      ambulances: 4,
+      golf: 3,
+      clinics: 5,
+      patients: 260,
+      transferred: 9,
+      visitors: 13500,
     },
   ]);
 
@@ -101,10 +109,80 @@ export default function KPIDashboard() {
     clinics: "",
     patients: "",
     transferred: "",
-    response: "",
+    visitors: "",
   });
 
+  const [period, setPeriod] = useState("monthly");
+  const PERIODS = [
+    { key: "daily", label: "Daily", ar: "يومي" },
+    { key: "weekly", label: "Weekly", ar: "أسبوعي" },
+    { key: "monthly", label: "Monthly", ar: "شهري" },
+    { key: "yearly", label: "Yearly", ar: "سنوي" },
+  ];
+
   const num = (v) => parseFloat(v) || 0;
+
+  const getWeekKey = (d) => {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+    return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+  };
+
+  const getPeriodKey = (dateStr, p) => {
+    const parts = (dateStr || "").split("-");
+    const year = parts[0] || "----";
+    const month = parts[1] || "01";
+    const day = parts[2] || "01";
+    if (p === "yearly") return year;
+    if (p === "monthly") return `${year}-${month}`;
+    if (p === "daily") return `${year}-${month}-${day}`;
+    if (p === "weekly") {
+      const d = new Date(`${year}-${month}-${day}`);
+      if (isNaN(d)) return `${year}-${month}`;
+      return getWeekKey(d);
+    }
+    return dateStr;
+  };
+
+  const aggregated = useMemo(() => {
+    const map = {};
+    rows.forEach((r) => {
+      const key = getPeriodKey(r.date, period);
+      if (!map[key]) {
+        map[key] = {
+          period: key,
+          events: 0,
+          paramedics: 0,
+          nurses: 0,
+          doctors: 0,
+          ambulances: 0,
+          golf: 0,
+          clinics: 0,
+          patients: 0,
+          transferred: 0,
+          visitors: 0,
+          count: 0,
+        };
+      }
+      const g = map[key];
+      g.events += num(r.events);
+      g.paramedics += num(r.paramedics);
+      g.nurses += num(r.nurses);
+      g.doctors += num(r.doctors);
+      g.ambulances += num(r.ambulances);
+      g.golf += num(r.golf);
+      g.clinics += num(r.clinics);
+      g.patients += num(r.patients);
+      g.transferred += num(r.transferred);
+      g.visitors += num(r.visitors);
+      g.count += 1;
+    });
+    return Object.values(map).sort((a, b) => a.period.localeCompare(b.period));
+  }, [rows, period]);
+
   const totals = rows.reduce(
     (a, r) => ({
       events: a.events + num(r.events),
@@ -116,6 +194,7 @@ export default function KPIDashboard() {
       clinics: a.clinics + num(r.clinics),
       patients: a.patients + num(r.patients),
       transferred: a.transferred + num(r.transferred),
+      visitors: a.visitors + num(r.visitors),
     }),
     {
       events: 0,
@@ -127,6 +206,7 @@ export default function KPIDashboard() {
       clinics: 0,
       patients: 0,
       transferred: 0,
+      visitors: 0,
     }
   );
 
@@ -136,50 +216,6 @@ export default function KPIDashboard() {
   const avgPerEvent = totals.events
     ? Math.round(totals.patients / totals.events)
     : 0;
-
-  const respValues = rows.map((r) => num(r.response)).filter((v) => v > 0);
-  const avgResponse = respValues.length
-    ? (respValues.reduce((s, v) => s + v, 0) / respValues.length).toFixed(1)
-    : 0;
-  const minResponse = respValues.length
-    ? Math.min(...respValues).toFixed(1)
-    : 0;
-  const maxResponse = respValues.length
-    ? Math.max(...respValues).toFixed(1)
-    : 0;
-  const metTarget = respValues.filter((v) => v <= TARGET_RESPONSE).length;
-  const complianceRate = respValues.length
-    ? Math.round((metTarget / respValues.length) * 100)
-    : 0;
-  const isOverTarget = num(avgResponse) > TARGET_RESPONSE;
-
-  const fastestRow = rows.reduce(
-    (best, r) =>
-      num(r.response) > 0 && (!best || num(r.response) < num(best.response))
-        ? r
-        : best,
-    null
-  );
-  const slowestRow = rows.reduce(
-    (worst, r) =>
-      num(r.response) > 0 && (!worst || num(r.response) > num(worst.response))
-        ? r
-        : worst,
-    null
-  );
-
-  const respColor =
-    avgResponse <= 5
-      ? "bg-emerald-500"
-      : avgResponse <= 8
-      ? "bg-amber-500"
-      : "bg-red-600";
-  const respLabel =
-    avgResponse <= 5
-      ? "Excellent"
-      : avgResponse <= 8
-      ? "Acceptable"
-      : "Needs Improvement";
 
   const trend = (key) => {
     if (rows.length < 2) return 0;
@@ -204,14 +240,14 @@ export default function KPIDashboard() {
       clinics: "",
       patients: "",
       transferred: "",
-      response: "",
+      visitors: "",
     });
   };
   const delRow = (id) => setRows(rows.filter((r) => r.id !== id));
 
   const exportCSV = () => {
     const headers = [
-      "Month",
+      "Date",
       "Event",
       "Events",
       "Paramedics",
@@ -222,7 +258,7 @@ export default function KPIDashboard() {
       "Clinics",
       "Patients",
       "Transferred",
-      "Response",
+      "Visitors",
     ];
     const lines = rows.map((r) =>
       [
@@ -237,11 +273,11 @@ export default function KPIDashboard() {
         r.clinics,
         r.patients,
         r.transferred,
-        r.response,
+        r.visitors,
       ].join(",")
     );
     const csv = [headers.join(","), ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -250,10 +286,66 @@ export default function KPIDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  // === طباعة PDF ===
-  const printPDF = () => {
-    window.print();
+  // ===== تصدير Excel (.xls) بدون أي مكتبة =====
+  const exportExcel = () => {
+    const headers = [
+      "Date",
+      "Event",
+      "Events",
+      "Visitors",
+      "Paramedics",
+      "Nurses",
+      "Doctors",
+      "Ambulances",
+      "Golf Carts",
+      "Clinics",
+      "Patients",
+      "Transferred",
+    ];
+    let html =
+      '<table border="1"><thead><tr style="background:#dc2626;color:#fff">';
+    headers.forEach((h) => (html += `<th>${h}</th>`));
+    html += "</tr></thead><tbody>";
+    rows.forEach((r) => {
+      html += `<tr>
+        <td>${r.date}</td><td>${r.event}</td><td>${num(r.events)}</td>
+        <td>${num(r.visitors)}</td><td>${num(r.paramedics)}</td><td>${num(
+        r.nurses
+      )}</td>
+        <td>${num(r.doctors)}</td><td>${num(r.ambulances)}</td><td>${num(
+        r.golf
+      )}</td>
+        <td>${num(r.clinics)}</td><td>${num(r.patients)}</td><td>${num(
+        r.transferred
+      )}</td>
+      </tr>`;
+    });
+    html += `<tr style="background:#f1f5f9;font-weight:bold">
+        <td>TOTAL</td><td></td><td>${totals.events}</td><td>${totals.visitors}</td>
+        <td>${totals.paramedics}</td><td>${totals.nurses}</td><td>${totals.doctors}</td>
+        <td>${totals.ambulances}</td><td>${totals.golf}</td><td>${totals.clinics}</td>
+        <td>${totals.patients}</td><td>${totals.transferred}</td>
+      </tr>`;
+    html += "</tbody></table>";
+
+    const blob = new Blob(
+      [
+        '\ufeff<html><head><meta charset="utf-8"></head><body>' +
+          html +
+          "</body></html>",
+      ],
+      { type: "application/vnd.ms-excel" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const dateStr = new Date().toISOString().split("T")[0];
+    a.download = `KPI-Report-${dateStr}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
+
+  const printPDF = () => window.print();
 
   const kpis = [
     {
@@ -262,6 +354,13 @@ export default function KPIDashboard() {
       icon: Activity,
       color: "bg-emerald-500",
       tKey: "events",
+    },
+    {
+      label: "Visitors",
+      value: totals.visitors.toLocaleString(),
+      icon: Eye,
+      color: "bg-fuchsia-500",
+      tKey: "visitors",
     },
     {
       label: "Paramedics",
@@ -321,12 +420,13 @@ export default function KPIDashboard() {
     },
   ];
 
-  const chartData = rows.map((r) => ({
-    name: r.date,
-    Patients: num(r.patients),
-    Transferred: num(r.transferred),
-    "Response (min)": num(r.response),
+  const chartData = aggregated.map((g) => ({
+    name: g.period,
+    Patients: g.patients,
+    Transferred: g.transferred,
+    Visitors: g.visitors,
   }));
+
   const staffData = [
     { name: "Paramedics", value: totals.paramedics },
     { name: "Nurses", value: totals.nurses },
@@ -335,9 +435,10 @@ export default function KPIDashboard() {
   const COLORS = ["#14b8a6", "#f43f5e", "#3b82f6"];
 
   const inputs = [
-    { k: "date", p: "Month (2025-04)", t: "text" },
+    { k: "date", p: "Date (2026-07-01)", t: "text" },
     { k: "event", p: "Event Name", t: "text" },
     { k: "events", p: "Events", t: "number" },
+    { k: "visitors", p: "Visitors", t: "number" },
     { k: "paramedics", p: "Paramedics", t: "number" },
     { k: "nurses", p: "Nurses", t: "number" },
     { k: "doctors", p: "Doctors", t: "number" },
@@ -346,7 +447,6 @@ export default function KPIDashboard() {
     { k: "clinics", p: "Clinics", t: "number" },
     { k: "patients", p: "Patients", t: "number" },
     { k: "transferred", p: "Transferred", t: "number" },
-    { k: "response", p: "Response (min)", t: "number" },
   ];
 
   const TrendBadge = ({ val }) => {
@@ -374,11 +474,12 @@ export default function KPIDashboard() {
     );
   };
 
+  const periodLabel = PERIODS.find((p) => p.key === period)?.label + " Report";
+
   const today = new Date().toLocaleDateString("en-GB");
 
   return (
     <div id="report" className="min-h-screen bg-slate-50 p-4 font-sans">
-      {/* === أنماط الطباعة === */}
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 10mm; }
@@ -411,10 +512,9 @@ export default function KPIDashboard() {
           </div>
           <div className="text-white text-center bg-white/15 rounded-xl px-5 py-3">
             <div className="text-3xl font-bold">
-              {avgResponse}
-              <span className="text-sm">min</span>
+              {totals.visitors.toLocaleString()}
             </div>
-            <div className="text-xs text-red-100">Avg Response Time</div>
+            <div className="text-xs text-red-100">Total Visitors</div>
           </div>
           <div className="flex flex-col gap-2 no-print">
             <button
@@ -422,6 +522,12 @@ export default function KPIDashboard() {
               className="bg-white text-red-600 rounded-xl px-4 py-2 flex items-center gap-2 font-medium hover:bg-red-50 transition"
             >
               <Printer className="w-4 h-4" /> Print PDF
+            </button>
+            <button
+              onClick={exportExcel}
+              className="bg-green-600 text-white rounded-xl px-4 py-2 flex items-center gap-2 font-medium hover:bg-green-700 transition"
+            >
+              <FileSpreadsheet className="w-4 h-4" /> Export Excel
             </button>
             <button
               onClick={exportCSV}
@@ -433,111 +539,106 @@ export default function KPIDashboard() {
         </div>
       </div>
 
-      {/* تنبيه زمن الاستجابة */}
-      {isOverTarget ? (
-        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 mb-6 flex items-center gap-3 avoid-break">
-          <div className="bg-red-600 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="text-white w-6 h-6" />
-          </div>
-          <div>
-            <div className="font-bold text-red-700">
-              ⚠️ Response Time Above Target!
-            </div>
-            <div className="text-sm text-red-600">
-              Average response time is {avgResponse} min — exceeds the{" "}
-              {TARGET_RESPONSE} min target. Action recommended.
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-xl p-4 mb-6 flex items-center gap-3 avoid-break">
-          <div className="bg-emerald-500 w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
-            <CheckCircle className="text-white w-6 h-6" />
-          </div>
-          <div>
-            <div className="font-bold text-emerald-700">
-              ✅ Response Time On Target!
-            </div>
-            <div className="text-sm text-emerald-600">
-              Average response time is {avgResponse} min — within the{" "}
-              {TARGET_RESPONSE} min target. Great work!
-            </div>
+      {/* أزرار الفترة */}
+      <div className="bg-white rounded-xl p-4 shadow-sm mb-6 avoid-break print-shadow">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <CalendarDays className="w-5 h-5 text-red-600" />
+          <h3 className="font-bold text-slate-700 mr-2">Statistics Report</h3>
+          <div className="flex flex-wrap gap-2 ml-auto no-print">
+            {PERIODS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPeriod(p.key)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  period === p.key
+                    ? "bg-red-600 text-white shadow"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {p.label} · {p.ar}
+              </button>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* لوحة زمن الاستجابة */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 avoid-break">
-        <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-emerald-500 print-shadow">
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowDown className="text-emerald-500 w-4 h-4" />
-            <span className="text-xs text-slate-500">Fastest Response</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-slate-50 rounded-xl p-4 border-l-4 border-red-500">
+            <div className="text-xs text-slate-500">
+              Periods ({periodLabel})
+            </div>
+            <div className="text-2xl font-bold text-slate-800">
+              {aggregated.length}
+            </div>
           </div>
-          <div className="text-2xl font-bold text-emerald-600">
-            {minResponse}{" "}
-            <span className="text-sm font-normal text-slate-400">min</span>
+          <div className="bg-slate-50 rounded-xl p-4 border-l-4 border-fuchsia-500">
+            <div className="text-xs text-slate-500">Total Visitors</div>
+            <div className="text-2xl font-bold text-fuchsia-600">
+              {totals.visitors.toLocaleString()}
+            </div>
           </div>
-          <div className="text-xs text-slate-400 mt-1">
-            {fastestRow ? `${fastestRow.date} · ${fastestRow.event}` : "—"}
+          <div className="bg-slate-50 rounded-xl p-4 border-l-4 border-cyan-500">
+            <div className="text-xs text-slate-500">Total Patients</div>
+            <div className="text-2xl font-bold text-cyan-600">
+              {totals.patients}
+            </div>
           </div>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-red-500 print-shadow">
-          <div className="flex items-center gap-2 mb-1">
-            <ArrowUp className="text-red-500 w-4 h-4" />
-            <span className="text-xs text-slate-500">Slowest Response</span>
-          </div>
-          <div className="text-2xl font-bold text-red-600">
-            {maxResponse}{" "}
-            <span className="text-sm font-normal text-slate-400">min</span>
-          </div>
-          <div className="text-xs text-slate-400 mt-1">
-            {slowestRow ? `${slowestRow.date} · ${slowestRow.event}` : "—"}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-purple-500 print-shadow">
-          <div className="flex items-center gap-2 mb-1">
-            <Timer className="text-purple-500 w-4 h-4" />
-            <span className="text-xs text-slate-500">Average Response</span>
-          </div>
-          <div className="text-2xl font-bold text-purple-600">
-            {avgResponse}{" "}
-            <span className="text-sm font-normal text-slate-400">min</span>
-          </div>
-          <div
-            className={`text-xs font-medium mt-1 ${
-              avgResponse <= 5
-                ? "text-emerald-600"
-                : avgResponse <= 8
-                ? "text-amber-600"
-                : "text-red-600"
-            }`}
-          >
-            {respLabel}
+          <div className="bg-slate-50 rounded-xl p-4 border-l-4 border-emerald-500">
+            <div className="text-xs text-slate-500">Avg Patients/Event</div>
+            <div className="text-2xl font-bold text-emerald-600">
+              {avgPerEvent}
+            </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500 print-shadow">
-          <div className="flex items-center gap-2 mb-1">
-            <Target className="text-blue-500 w-4 h-4" />
-            <span className="text-xs text-slate-500">Target Compliance</span>
-          </div>
-          <div className="text-2xl font-bold text-blue-600">
-            {complianceRate}%
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-2 mt-2">
-            <div
-              className={`h-2 rounded-full ${
-                complianceRate >= 70
-                  ? "bg-emerald-500"
-                  : complianceRate >= 40
-                  ? "bg-amber-500"
-                  : "bg-red-500"
-              }`}
-              style={{ width: `${complianceRate}%` }}
-            ></div>
-          </div>
-          <div className="text-xs text-slate-400 mt-1">
-            {metTarget} of {respValues.length} months met target
-          </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-100 text-slate-700">
+              <tr>
+                {[
+                  periodLabel,
+                  "Records",
+                  "Visitors",
+                  "Patients",
+                  "Transferred",
+                  "Events",
+                  "Paramedics",
+                  "Nurses",
+                  "Doctors",
+                ].map((h, i) => (
+                  <th
+                    key={i}
+                    className="px-3 py-2 font-medium whitespace-nowrap"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {aggregated.map((g, i) => (
+                <tr
+                  key={g.period}
+                  className={i % 2 ? "bg-slate-50" : "bg-white"}
+                >
+                  <td className="px-3 py-2 font-medium whitespace-nowrap">
+                    {g.period}
+                  </td>
+                  <td className="px-3 py-2 text-center">{g.count}</td>
+                  <td className="px-3 py-2 text-center text-fuchsia-600 font-medium">
+                    {g.visitors.toLocaleString()}
+                  </td>
+                  <td className="px-3 py-2 text-center">{g.patients}</td>
+                  <td className="px-3 py-2 text-center text-red-600 font-medium">
+                    {g.transferred}
+                  </td>
+                  <td className="px-3 py-2 text-center">{g.events}</td>
+                  <td className="px-3 py-2 text-center">{g.paramedics}</td>
+                  <td className="px-3 py-2 text-center">{g.nurses}</td>
+                  <td className="px-3 py-2 text-center">{g.doctors}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -573,7 +674,7 @@ export default function KPIDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 avoid-break">
         <div className="bg-white rounded-xl p-4 shadow-sm print-shadow">
           <h3 className="font-bold text-slate-700 mb-3">
-            Patients, Transfers & Response Time
+            Visitors, Patients & Transfers ({periodLabel})
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <ComposedChart data={chartData}>
@@ -587,6 +688,12 @@ export default function KPIDashboard() {
               <Tooltip />
               <Legend />
               <Bar
+                yAxisId="right"
+                dataKey="Visitors"
+                fill="#d946ef"
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
                 yAxisId="left"
                 dataKey="Patients"
                 fill="#14b8a6"
@@ -597,26 +704,6 @@ export default function KPIDashboard() {
                 dataKey="Transferred"
                 fill="#ef4444"
                 radius={[4, 4, 0, 0]}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="Response (min)"
-                stroke="#7c3aed"
-                strokeWidth={3}
-                dot={{ r: 4 }}
-              />
-              <ReferenceLine
-                yAxisId="right"
-                y={TARGET_RESPONSE}
-                stroke="#10b981"
-                strokeDasharray="5 5"
-                label={{
-                  value: "Target 5min",
-                  fontSize: 10,
-                  fill: "#10b981",
-                  position: "insideTopRight",
-                }}
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -677,9 +764,10 @@ export default function KPIDashboard() {
           <thead className="bg-red-600 text-white">
             <tr>
               {[
-                "Month",
+                "Date",
                 "Event",
                 "Events",
+                "Visitors",
                 "Paramedics",
                 "Nurses",
                 "Doctors",
@@ -688,7 +776,6 @@ export default function KPIDashboard() {
                 "Clinics",
                 "Patients",
                 "Transferred",
-                "Response (min)",
                 "",
               ].map((h, i) => (
                 <th key={i} className="px-3 py-3 font-medium whitespace-nowrap">
@@ -703,6 +790,9 @@ export default function KPIDashboard() {
                 <td className="px-3 py-2 whitespace-nowrap">{r.date}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.event}</td>
                 <td className="px-3 py-2 text-center">{r.events}</td>
+                <td className="px-3 py-2 text-center text-fuchsia-600 font-medium">
+                  {num(r.visitors).toLocaleString()}
+                </td>
                 <td className="px-3 py-2 text-center">{r.paramedics}</td>
                 <td className="px-3 py-2 text-center">{r.nurses}</td>
                 <td className="px-3 py-2 text-center">{r.doctors}</td>
@@ -712,17 +802,6 @@ export default function KPIDashboard() {
                 <td className="px-3 py-2 text-center">{r.patients}</td>
                 <td className="px-3 py-2 text-center text-red-600 font-medium">
                   {r.transferred}
-                </td>
-                <td
-                  className={`px-3 py-2 text-center font-medium ${
-                    num(r.response) <= 5
-                      ? "text-emerald-600"
-                      : num(r.response) <= 8
-                      ? "text-amber-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {r.response}
                 </td>
                 <td className="px-3 py-2 text-center no-print">
                   <button
@@ -738,9 +817,12 @@ export default function KPIDashboard() {
           <tfoot className="bg-slate-100 font-bold">
             <tr>
               <td className="px-3 py-3" colSpan={2}>
-                Total / Avg
+                Total
               </td>
               <td className="px-3 py-3 text-center">{totals.events}</td>
+              <td className="px-3 py-3 text-center text-fuchsia-600">
+                {totals.visitors.toLocaleString()}
+              </td>
               <td className="px-3 py-3 text-center">{totals.paramedics}</td>
               <td className="px-3 py-3 text-center">{totals.nurses}</td>
               <td className="px-3 py-3 text-center">{totals.doctors}</td>
@@ -750,9 +832,6 @@ export default function KPIDashboard() {
               <td className="px-3 py-3 text-center">{totals.patients}</td>
               <td className="px-3 py-3 text-center text-red-600">
                 {totals.transferred}
-              </td>
-              <td className="px-3 py-3 text-center text-purple-600">
-                {avgResponse}
               </td>
               <td className="no-print"></td>
             </tr>
