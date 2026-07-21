@@ -24,6 +24,8 @@ import {
   Printer,
   Eye,
   CalendarDays,
+  Clock,
+  Languages,
 } from "lucide-react";
 import {
   ComposedChart,
@@ -43,6 +45,7 @@ const RED = "#A3201E";
 const RED_DEEP = "#711512";
 const BEIGE = "#F4ECDD";
 const BEIGE_DEEP = "#E9DBC1";
+const GREEN = "#10b981";
 
 const num = (v) => parseFloat(v) || 0;
 
@@ -59,6 +62,7 @@ const emptyForm = {
   clinics: "",
   patients: "",
   transferred: "",
+  workingHours: "",
 };
 
 // ---------- Period grouping helpers ----------
@@ -85,7 +89,98 @@ function periodKey(dateStr, mode) {
   return dateStr;
 }
 
-function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
+// ---------- Translations ----------
+const I18N = {
+  en: {
+    title: "Dr. Sulaiman Al Habib Medical Group",
+    subtitle: "KPI Dashboard — Jeddah Season Events",
+    reportDate: "Report Date",
+    transferRate: "Hospital Transfer Rate",
+    totalVisitors: "Total Visitors",
+    logout: "Logout",
+    printPDF: "Print PDF",
+    exportExcel: "Export Excel",
+    exportCSV: "Export CSV",
+    loading: "Loading data...",
+    events: "Events",
+    visitors: "Visitors",
+    paramedics: "Paramedics",
+    nurses: "Nurses",
+    doctors: "Doctors",
+    ambulances: "Ambulances",
+    golf: "Golf Carts",
+    clinics: "Clinics",
+    patients: "Patients",
+    transferred: "Transferred to Hospital",
+    workingHours: "Working Hours",
+    avgPerEvent: "Avg Patients/Event",
+    statsReport: "Statistics Report",
+    daily: "Daily", weekly: "Weekly", monthly: "Monthly", yearly: "Yearly",
+    periods: "Periods",
+    report: "Report",
+    totalPatients: "Total Patients",
+    date: "Date",
+    event: "Event",
+    transferredShort: "Transferred",
+    records: "Records",
+    noData: "No data yet",
+    visitorsPatientsChart: "Visitors, Patients & Transfers",
+    staffDistribution: "Medical Staff Distribution",
+    addRecord: "Add New Record",
+    eventName: "Event Name",
+    golfCarts: "Golf Carts",
+    add: "Add",
+    total: "Total",
+  },
+  ar: {
+    title: "مجموعة د. سليمان الحبيب الطبية",
+    subtitle: "لوحة مؤشرات الأداء — فعاليات موسم جدة",
+    reportDate: "تاريخ التقرير",
+    transferRate: "نسبة التحويل للمستشفى",
+    totalVisitors: "إجمالي الزوار",
+    logout: "تسجيل الخروج",
+    printPDF: "طباعة PDF",
+    exportExcel: "تصدير إكسل",
+    exportCSV: "تصدير CSV",
+    loading: "جاري تحميل البيانات...",
+    events: "الفعاليات",
+    visitors: "الزوار",
+    paramedics: "المسعفين",
+    nurses: "الممرضين",
+    doctors: "الأطباء",
+    ambulances: "الإسعاف",
+    golf: "عربات الغولف",
+    clinics: "العيادات",
+    patients: "المرضى",
+    transferred: "المحولون للمستشفى",
+    workingHours: "ساعات العمل",
+    avgPerEvent: "متوسط المرضى/فعالية",
+    statsReport: "تقرير الإحصائيات",
+    daily: "يومي", weekly: "أسبوعي", monthly: "شهري", yearly: "سنوي",
+    periods: "الفترات",
+    report: "تقرير",
+    totalPatients: "إجمالي المرضى",
+    date: "التاريخ",
+    event: "الفعالية",
+    transferredShort: "المحولون",
+    records: "السجلات",
+    noData: "لا توجد بيانات بعد",
+    visitorsPatientsChart: "الزوار والمرضى والتحويلات",
+    staffDistribution: "توزيع الكادر الطبي",
+    addRecord: "إضافة سجل جديد",
+    eventName: "اسم الفعالية",
+    golfCarts: "عربات الغولف",
+    add: "إضافة",
+    total: "الإجمالي",
+  },
+};
+
+function KPIDashboard({ onLogout }) {
+  const [lang, setLang] = useState("en");
+  const t = (key) => I18N[lang][key] || key;
+  const isAr = lang === "ar";
+
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [periodMode, setPeriodMode] = useState("monthly");
@@ -118,18 +213,11 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
       clinics: a.clinics + num(r.clinics),
       patients: a.patients + num(r.patients),
       transferred: a.transferred + num(r.transferred),
+      workingHours: a.workingHours + num(r.working_hours),
     }),
     {
-      events: 0,
-      visitors: 0,
-      paramedics: 0,
-      nurses: 0,
-      doctors: 0,
-      ambulances: 0,
-      golf: 0,
-      clinics: 0,
-      patients: 0,
-      transferred: 0,
+      events: 0, visitors: 0, paramedics: 0, nurses: 0, doctors: 0,
+      ambulances: 0, golf: 0, clinics: 0, patients: 0, transferred: 0, workingHours: 0,
     }
   );
 
@@ -142,8 +230,10 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
 
   const trend = (key) => {
     if (rows.length < 2) return 0;
-    const last = num(rows[rows.length - 1][key]);
-    const prev = num(rows[rows.length - 2][key]);
+    const map = { workingHours: "working_hours" };
+    const field = map[key] || key;
+    const last = num(rows[rows.length - 1][field]);
+    const prev = num(rows[rows.length - 2][field]);
     if (prev === 0) return 0;
     return (((last - prev) / prev) * 100).toFixed(0);
   };
@@ -164,6 +254,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
       clinics: num(form.clinics),
       patients: num(form.patients),
       transferred: num(form.transferred),
+      working_hours: num(form.workingHours),
     };
     const { data, error } = await supabase
       .from("events_kpi")
@@ -183,37 +274,16 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
   // ---------- CSV Export ----------
   const exportCSV = () => {
     const headers = [
-      "Date",
-      "Event",
-      "Events",
-      "Visitors",
-      "Paramedics",
-      "Nurses",
-      "Doctors",
-      "Ambulances",
-      "Golf Carts",
-      "Clinics",
-      "Patients",
-      "Transferred",
+      "Date", "Event", "Events", "Visitors", "Paramedics", "Nurses", "Doctors",
+      "Ambulances", "Golf Carts", "Clinics", "Patients", "Transferred", "Working Hours",
     ];
     const lines = rows.map((r) =>
       [
-        r.date,
-        r.event,
-        r.events,
-        r.visitors,
-        r.paramedics,
-        r.nurses,
-        r.doctors,
-        r.ambulances,
-        r.golf,
-        r.clinics,
-        r.patients,
-        r.transferred,
+        r.date, r.event, r.events, r.visitors, r.paramedics, r.nurses, r.doctors,
+        r.ambulances, r.golf, r.clinics, r.patients, r.transferred, r.working_hours,
       ].join(",")
     );
     const csv = [headers.join(","), ...lines].join("\n");
-    // BOM prefix so Excel reads Arabic text correctly instead of garbled characters
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -223,9 +293,9 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
     URL.revokeObjectURL(url);
   };
 
-  // ---------- Styled Excel export (red & beige brand colors) ----------
+  // ---------- Styled Excel export ----------
   const exportExcel = () => {
-    const cols = 12;
+    const cols = 13;
     const style = `
       body{font-family:Arial, sans-serif;}
       table{border-collapse:collapse; direction:rtl;}
@@ -240,21 +310,21 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
     let html = `<html><head><meta charset="UTF-8"><style>${style}</style></head><body>`;
     html += `<table>`;
     html += `<tr><td class="title" colspan="${cols}">مجموعة د. سليمان الحبيب — فعاليات جدة (Dr. Sulaiman Al Habib Group — Jeddah Events)</td></tr>`;
-    html += `<tr><td class="subtitle" colspan="${cols}">Report Date: ${new Date().toLocaleDateString("en-GB")}</td></tr>`;
-    html += `<tr><th>Date</th><th>Event</th><th>Events</th><th>Visitors</th><th>Paramedics</th><th>Nurses</th><th>Doctors</th><th>Ambulances</th><th>Golf Carts</th><th>Clinics</th><th>Patients</th><th>Transferred</th></tr>`;
+    html += `<tr><td class="subtitle" colspan="${cols}">Report Date: ${new Date().toLocaleDateString("en-US")}</td></tr>`;
+    html += `<tr><th>Date</th><th>Event</th><th>Events</th><th>Visitors</th><th>Paramedics</th><th>Nurses</th><th>Doctors</th><th>Ambulances</th><th>Golf Carts</th><th>Clinics</th><th>Patients</th><th>Transferred</th><th>Working Hours</th></tr>`;
     rows.forEach((r, i) => {
       html += `<tr class="${i % 2 ? "even" : "odd"}">
         <td>${r.date || ""}</td><td>${r.event || ""}</td><td>${r.events || 0}</td>
-        <td>${num(r.visitors).toLocaleString()}</td><td>${r.paramedics || 0}</td><td>${r.nurses || 0}</td>
+        <td>${num(r.visitors).toLocaleString("en-US")}</td><td>${r.paramedics || 0}</td><td>${r.nurses || 0}</td>
         <td>${r.doctors || 0}</td><td>${r.ambulances || 0}</td><td>${r.golf || 0}</td>
-        <td>${r.clinics || 0}</td><td>${r.patients || 0}</td><td>${r.transferred || 0}</td>
+        <td>${r.clinics || 0}</td><td>${r.patients || 0}</td><td>${r.transferred || 0}</td><td>${r.working_hours || 0}</td>
       </tr>`;
     });
     html += `<tr class="totalrow">
-      <td colspan="2">Total</td><td>${totals.events}</td><td>${totals.visitors.toLocaleString()}</td>
+      <td colspan="2">Total</td><td>${totals.events}</td><td>${totals.visitors.toLocaleString("en-US")}</td>
       <td>${totals.paramedics}</td><td>${totals.nurses}</td><td>${totals.doctors}</td>
       <td>${totals.ambulances}</td><td>${totals.golf}</td><td>${totals.clinics}</td>
-      <td>${totals.patients}</td><td>${totals.transferred}</td>
+      <td>${totals.patients}</td><td>${totals.transferred}</td><td>${totals.workingHours}</td>
     </tr>`;
     html += `</table></body></html>`;
 
@@ -271,16 +341,17 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
 
   // ---------- KPI cards ----------
   const kpis = [
-    { label: "Events", value: totals.events, icon: Activity, color: "bg-emerald-500", tKey: "events" },
-    { label: "Visitors", value: totals.visitors.toLocaleString(), icon: Eye, color: `bg-[${RED}]`, tKey: "visitors" },
-    { label: "Paramedics", value: totals.paramedics, icon: Users, color: "bg-teal-500", tKey: "paramedics" },
-    { label: "Nurses", value: totals.nurses, icon: Heart, color: "bg-rose-500", tKey: "nurses" },
-    { label: "Doctors", value: totals.doctors, icon: Stethoscope, color: "bg-blue-500", tKey: "doctors" },
-    { label: "Ambulances", value: totals.ambulances, icon: Truck, color: "bg-orange-500", tKey: "ambulances" },
-    { label: "Golf Carts", value: totals.golf, icon: Car, color: "bg-amber-500", tKey: "golf" },
-    { label: "Clinics", value: totals.clinics, icon: Building2, color: "bg-indigo-500", tKey: "clinics" },
-    { label: "Patients", value: totals.patients, icon: UserPlus, color: "bg-cyan-600", tKey: "patients" },
-    { label: "Transferred to Hospital", value: totals.transferred, icon: ArrowRightLeft, color: `bg-[${RED}]`, tKey: "transferred" },
+    { label: t("events"), value: totals.events, icon: Activity, color: "bg-emerald-500", tKey: "events" },
+    { label: t("visitors"), value: totals.visitors.toLocaleString("en-US"), icon: Eye, color: `bg-[${RED}]`, tKey: "visitors" },
+    { label: t("paramedics"), value: totals.paramedics, icon: Users, color: `bg-[${RED}]`, tKey: "paramedics" },
+    { label: t("nurses"), value: totals.nurses, icon: Heart, color: "bg-emerald-500", tKey: "nurses" },
+    { label: t("doctors"), value: totals.doctors, icon: Stethoscope, color: "bg-blue-500", tKey: "doctors" },
+    { label: t("ambulances"), value: totals.ambulances, icon: Truck, color: `bg-[${RED}]`, tKey: "ambulances" },
+    { label: t("golf"), value: totals.golf, icon: Car, color: "bg-amber-500", tKey: "golf" },
+    { label: t("clinics"), value: totals.clinics, icon: Building2, color: "bg-indigo-500", tKey: "clinics" },
+    { label: t("patients"), value: totals.patients, icon: UserPlus, color: "bg-cyan-600", tKey: "patients" },
+    { label: t("transferred"), value: totals.transferred, icon: ArrowRightLeft, color: `bg-[${RED}]`, tKey: "transferred" },
+    { label: t("workingHours"), value: totals.workingHours, icon: Clock, color: "bg-slate-600", tKey: "workingHours" },
   ];
 
   const chartData = rows.map((r) => ({
@@ -290,25 +361,26 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
     Transferred: num(r.transferred),
   }));
   const staffData = [
-    { name: "Paramedics", value: totals.paramedics },
-    { name: "Nurses", value: totals.nurses },
-    { name: "Doctors", value: totals.doctors },
+    { name: t("paramedics"), value: totals.paramedics },
+    { name: t("nurses"), value: totals.nurses },
+    { name: t("doctors"), value: totals.doctors },
   ];
-  const COLORS = ["#14b8a6", RED, "#3b82f6"];
+  const COLORS = [RED, GREEN, "#3b82f6"];
 
   const inputs = [
-    { k: "date", p: "Date", t: "date" },
-    { k: "event", p: "Event Name", t: "text" },
-    { k: "events", p: "Events", t: "number" },
-    { k: "visitors", p: "Visitors", t: "number" },
-    { k: "paramedics", p: "Paramedics", t: "number" },
-    { k: "nurses", p: "Nurses", t: "number" },
-    { k: "doctors", p: "Doctors", t: "number" },
-    { k: "ambulances", p: "Ambulances", t: "number" },
-    { k: "golf", p: "Golf Carts", t: "number" },
-    { k: "clinics", p: "Clinics", t: "number" },
-    { k: "patients", p: "Patients", t: "number" },
-    { k: "transferred", p: "Transferred", t: "number" },
+    { k: "date", p: t("date"), t: "date" },
+    { k: "event", p: t("eventName"), t: "text" },
+    { k: "events", p: t("events"), t: "number" },
+    { k: "visitors", p: t("visitors"), t: "number" },
+    { k: "paramedics", p: t("paramedics"), t: "number" },
+    { k: "nurses", p: t("nurses"), t: "number" },
+    { k: "doctors", p: t("doctors"), t: "number" },
+    { k: "ambulances", p: t("ambulances"), t: "number" },
+    { k: "golf", p: t("golfCarts"), t: "number" },
+    { k: "clinics", p: t("clinics"), t: "number" },
+    { k: "patients", p: t("patients"), t: "number" },
+    { k: "transferred", p: t("transferredShort"), t: "number" },
+    { k: "workingHours", p: t("workingHours"), t: "number" },
   ];
 
   const TrendBadge = ({ val }) => {
@@ -328,7 +400,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
     );
   };
 
-  // ---------- Statistics Report (Daily / Weekly / Monthly / Yearly) ----------
+  // ---------- Statistics Report ----------
   const periodLabels = {
     daily: { en: "Daily", ar: "يومي" },
     weekly: { en: "Weekly", ar: "أسبوعي" },
@@ -349,10 +421,10 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
   });
   const groupList = Object.values(groups).sort((a, b) => (a.key > b.key ? 1 : -1));
 
-  const today = new Date().toLocaleDateString("en-GB");
+  const today = new Date().toLocaleDateString("en-US");
 
   return (
-    <div id="report" className="min-h-screen bg-slate-50 p-4 font-sans">
+    <div id="report" dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-slate-50 p-4 font-sans">
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 10mm; }
@@ -373,47 +445,60 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
           <Heart className="w-10 h-10" style={{ color: RED }} fill="currentColor" />
         </div>
         <div className="text-white">
-          <h1 className="text-2xl font-bold">Dr. Sulaiman Al Habib Medical Group</h1>
-          <p className="text-sm mt-1" style={{ color: BEIGE }}>KPI Dashboard — Jeddah Season Events</p>
-          <p className="text-xs mt-1" style={{ color: BEIGE }}>Report Date: {today}</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-sm mt-1" style={{ color: BEIGE }}>{t("subtitle")}</p>
+          <p className="text-xs mt-1" style={{ color: BEIGE }}>{t("reportDate")}: {today}</p>
         </div>
-        <div className="ml-auto flex flex-wrap gap-3">
+        <div className="ml-auto flex flex-wrap gap-3 items-center">
+          <button
+            onClick={() => setLang(isAr ? "en" : "ar")}
+            className="no-print rounded-xl px-4 py-3 flex items-center gap-2 font-medium bg-white/15 text-white border border-white/30"
+          >
+            <Languages className="w-4 h-4" /> {isAr ? "English" : "العربية"}
+          </button>
           <div className="text-white text-center bg-white/15 rounded-xl px-5 py-3">
             <div className="text-3xl font-bold">{transferRate}%</div>
-            <div className="text-xs" style={{ color: BEIGE }}>Hospital Transfer Rate</div>
+            <div className="text-xs" style={{ color: BEIGE }}>{t("transferRate")}</div>
           </div>
           <div className="text-white text-center bg-white/15 rounded-xl px-5 py-3">
-            <div className="text-3xl font-bold">{totals.visitors.toLocaleString()}</div>
-            <div className="text-xs" style={{ color: BEIGE }}>Total Visitors</div>
+            <div className="text-3xl font-bold">{totals.visitors.toLocaleString("en-US")}</div>
+            <div className="text-xs" style={{ color: BEIGE }}>{t("totalVisitors")}</div>
           </div>
           <div className="flex flex-col gap-2 no-print">
+            <button
+              onClick={onLogout}
+              className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium text-white border border-white/30"
+              style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+            >
+              {t("logout")}
+            </button>
             <button
               onClick={printPDF}
               className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium bg-white hover:bg-slate-50"
               style={{ color: RED }}
             >
-              <Printer className="w-4 h-4" /> Print PDF
+              <Printer className="w-4 h-4" /> {t("printPDF")}
             </button>
             <button
               onClick={exportExcel}
               className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium text-white"
               style={{ backgroundColor: RED_DEEP }}
             >
-              <Download className="w-4 h-4" /> Export Excel
+              <Download className="w-4 h-4" /> {t("exportExcel")}
             </button>
             <button
               onClick={exportCSV}
               className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium border"
               style={{ backgroundColor: "white", color: RED_DEEP, borderColor: RED_DEEP }}
             >
-              <Download className="w-4 h-4" /> Export CSV
+              <Download className="w-4 h-4" /> {t("exportCSV")}
             </button>
           </div>
         </div>
       </div>
 
       {loading && (
-        <div className="text-center text-slate-400 mb-4">Loading data...</div>
+        <div className="text-center text-slate-400 mb-4">{t("loading")}</div>
       )}
 
       {/* KPI Cards */}
@@ -436,14 +521,14 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
             <Users className="text-white w-5 h-5" />
           </div>
           <div className="text-2xl font-bold text-slate-800">{avgPerEvent}</div>
-          <div className="text-xs text-slate-500">Avg Patients/Event</div>
+          <div className="text-xs text-slate-500">{t("avgPerEvent")}</div>
         </div>
       </div>
 
       {/* Statistics Report */}
       <div className="bg-white rounded-xl p-4 shadow-sm mb-6 avoid-break print-shadow">
         <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
-          <CalendarDays className="w-4 h-4" style={{ color: RED }} /> Statistics Report
+          <CalendarDays className="w-4 h-4" style={{ color: RED }} /> {t("statsReport")}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 no-print">
           {Object.keys(periodLabels).map((mode) => (
@@ -457,26 +542,26 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
                   : { backgroundColor: BEIGE, color: RED_DEEP }
               }
             >
-              {periodLabels[mode].en} · {periodLabels[mode].ar}
+              {t(mode)}
             </button>
           ))}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: `4px solid ${RED}` }}>
-            <div className="text-xs text-slate-500 mb-1">Periods ({periodLabels[periodMode].en} Report)</div>
+            <div className="text-xs text-slate-500 mb-1">{t("periods")} ({t(periodMode)} {t("report")})</div>
             <div className="text-2xl font-bold" style={{ color: RED_DEEP }}>{groupList.length}</div>
           </div>
           <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: "4px solid #7c3aed" }}>
-            <div className="text-xs text-slate-500 mb-1">Total Visitors</div>
-            <div className="text-2xl font-bold text-purple-700">{totals.visitors.toLocaleString()}</div>
+            <div className="text-xs text-slate-500 mb-1">{t("totalVisitors")}</div>
+            <div className="text-2xl font-bold text-purple-700">{totals.visitors.toLocaleString("en-US")}</div>
           </div>
           <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: "4px solid #0891b2" }}>
-            <div className="text-xs text-slate-500 mb-1">Total Patients</div>
-            <div className="text-2xl font-bold text-cyan-700">{totals.patients.toLocaleString()}</div>
+            <div className="text-xs text-slate-500 mb-1">{t("totalPatients")}</div>
+            <div className="text-2xl font-bold text-cyan-700">{totals.patients.toLocaleString("en-US")}</div>
           </div>
           <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: "4px solid #10b981" }}>
-            <div className="text-xs text-slate-500 mb-1">Avg Patients/Event</div>
+            <div className="text-xs text-slate-500 mb-1">{t("avgPerEvent")}</div>
             <div className="text-2xl font-bold text-emerald-700">{avgPerEvent}</div>
           </div>
         </div>
@@ -485,11 +570,11 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
           <table className="w-full text-sm text-left">
             <thead style={{ backgroundColor: RED }}>
               <tr className="text-white">
-                <th className="px-3 py-3 font-medium">{periodLabels[periodMode].en} Report</th>
-                <th className="px-3 py-3 font-medium text-center">Records</th>
-                <th className="px-3 py-3 font-medium text-center">Visitors</th>
-                <th className="px-3 py-3 font-medium text-center">Patients</th>
-                <th className="px-3 py-3 font-medium text-center">Transferred</th>
+                <th className="px-3 py-3 font-medium">{t(periodMode)} {t("report")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("records")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("visitors")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("patients")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("transferredShort")}</th>
               </tr>
             </thead>
             <tbody>
@@ -497,14 +582,14 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
                 <tr key={g.key} style={{ backgroundColor: i % 2 ? BEIGE : "white" }}>
                   <td className="px-3 py-2 font-medium" style={{ color: RED_DEEP }}>{g.key}</td>
                   <td className="px-3 py-2 text-center">{g.records}</td>
-                  <td className="px-3 py-2 text-center text-purple-700 font-semibold">{g.visitors.toLocaleString()}</td>
-                  <td className="px-3 py-2 text-center">{g.patients.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-center text-purple-700 font-semibold">{g.visitors.toLocaleString("en-US")}</td>
+                  <td className="px-3 py-2 text-center">{g.patients.toLocaleString("en-US")}</td>
                   <td className="px-3 py-2 text-center text-red-600 font-medium">{g.transferred}</td>
                 </tr>
               ))}
               {groupList.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-slate-400">No data yet</td>
+                  <td colSpan={5} className="px-3 py-6 text-center text-slate-400">{t("noData")}</td>
                 </tr>
               )}
             </tbody>
@@ -515,7 +600,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 avoid-break">
         <div className="bg-white rounded-xl p-4 shadow-sm print-shadow">
-          <h3 className="font-bold text-slate-700 mb-3">Visitors, Patients & Transfers</h3>
+          <h3 className="font-bold text-slate-700 mb-3">{t("visitorsPatientsChart")}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <ComposedChart data={chartData}>
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -530,7 +615,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
           </ResponsiveContainer>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm print-shadow">
-          <h3 className="font-bold text-slate-700 mb-3">Medical Staff Distribution</h3>
+          <h3 className="font-bold text-slate-700 mb-3">{t("staffDistribution")}</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie data={staffData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
@@ -547,12 +632,13 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
 
       {/* Add Form */}
       <div className="bg-white rounded-xl p-4 shadow-sm mb-6 no-print">
-        <h3 className="font-bold text-slate-700 mb-3">Add New Record</h3>
+        <h3 className="font-bold text-slate-700 mb-3">{t("addRecord")}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {inputs.map((inp) => (
             <input
               key={inp.k}
               type={inp.t}
+              lang="en"
               step="0.1"
               placeholder={inp.p}
               value={form[inp.k]}
@@ -566,7 +652,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
             className="rounded-lg px-4 py-2 flex items-center justify-center gap-1 text-sm font-medium text-white"
             style={{ backgroundColor: RED }}
           >
-            <Plus className="w-4 h-4" /> Add
+            <Plus className="w-4 h-4" /> {t("add")}
           </button>
         </div>
       </div>
@@ -576,7 +662,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
         <table className="w-full text-sm text-left">
           <thead style={{ backgroundColor: RED }}>
             <tr className="text-white">
-              {["Date", "Event", "Events", "Visitors", "Paramedics", "Nurses", "Doctors", "Ambulances", "Golf Carts", "Clinics", "Patients", "Transferred", ""].map((h, i) => (
+              {[t("date"), t("event"), t("events"), t("visitors"), t("paramedics"), t("nurses"), t("doctors"), t("ambulances"), t("golfCarts"), t("clinics"), t("patients"), t("transferredShort"), t("workingHours"), ""].map((h, i) => (
                 <th key={i} className="px-3 py-3 font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -587,7 +673,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
                 <td className="px-3 py-2 whitespace-nowrap">{r.date}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.event}</td>
                 <td className="px-3 py-2 text-center">{r.events}</td>
-                <td className="px-3 py-2 text-center text-purple-700 font-semibold">{num(r.visitors).toLocaleString()}</td>
+                <td className="px-3 py-2 text-center text-purple-700 font-semibold">{num(r.visitors).toLocaleString("en-US")}</td>
                 <td className="px-3 py-2 text-center">{r.paramedics}</td>
                 <td className="px-3 py-2 text-center">{r.nurses}</td>
                 <td className="px-3 py-2 text-center">{r.doctors}</td>
@@ -596,6 +682,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
                 <td className="px-3 py-2 text-center">{r.clinics}</td>
                 <td className="px-3 py-2 text-center">{r.patients}</td>
                 <td className="px-3 py-2 text-center text-red-600 font-medium">{r.transferred}</td>
+                <td className="px-3 py-2 text-center">{r.working_hours}</td>
                 <td className="px-3 py-2 text-center no-print">
                   <button onClick={() => delRow(r.id)} className="text-red-400 hover:text-red-600">
                     <Trash2 className="w-4 h-4" />
@@ -606,9 +693,9 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
           </tbody>
           <tfoot style={{ backgroundColor: BEIGE_DEEP }} className="font-bold">
             <tr>
-              <td className="px-3 py-3" colSpan={2}>Total</td>
+              <td className="px-3 py-3" colSpan={2}>{t("total")}</td>
               <td className="px-3 py-3 text-center">{totals.events}</td>
-              <td className="px-3 py-3 text-center text-purple-700">{totals.visitors.toLocaleString()}</td>
+              <td className="px-3 py-3 text-center text-purple-700">{totals.visitors.toLocaleString("en-US")}</td>
               <td className="px-3 py-3 text-center">{totals.paramedics}</td>
               <td className="px-3 py-3 text-center">{totals.nurses}</td>
               <td className="px-3 py-3 text-center">{totals.doctors}</td>
@@ -617,6 +704,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
               <td className="px-3 py-3 text-center">{totals.clinics}</td>
               <td className="px-3 py-3 text-center">{totals.patients}</td>
               <td className="px-3 py-3 text-center text-red-600">{totals.transferred}</td>
+              <td className="px-3 py-3 text-center">{totals.workingHours}</td>
               <td className="no-print"></td>
             </tr>
           </tfoot>
@@ -625,6 +713,7 @@ function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
     </div>
   );
 }
+
 // ---------- Authentication Gate ----------
 export default function App() {
   const [session, setSession] = useState(null);
