@@ -1,5 +1,9 @@
 import React, { useState } from "react";
-import { supabase } from "./supabaseClient";
+import { createClient } from "@supabase/supabase-js";
+const supabase = createClient(
+  "https://zebpzfrsmwgiswoaxxel.supabase.co",
+  "sb_publishable_Z0AltV4dRng56zuK4aZMfA_KrcsF9Ie"
+);
 import { Heart, Lock } from "lucide-react";
 
 const RED = "#A3201E";
