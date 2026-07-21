@@ -3,7 +3,7 @@ import Login from "./Login";
 import { createClient } from "@supabase/supabase-js";
 const supabase = createClient(
   "https://zebpzfrsmwgiswoaxxel.supabase.co",
-  "sb_publishable_Z0AltV4dRng56zuK4aZMfA_KrcsF9Ie"
+  "sb_publishable_Z0A1tV4dRng56zuK4aZMfA_KrcsF9Ie"
 );
 import {
   Activity,
