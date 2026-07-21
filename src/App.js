@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Login from "./Login";
 import { createClient } from "@supabase/supabase-js";
 const supabase = createClient(
   "https://zebpzfrsmwgiswoaxxel.supabase.co",
@@ -84,8 +85,7 @@ function periodKey(dateStr, mode) {
   return dateStr;
 }
 
-export default function KPIDashboard() {
-  const [rows, setRows] = useState([]);
+function KPIDashboard({ onLogout }) {  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [periodMode, setPeriodMode] = useState("monthly");
@@ -624,4 +624,34 @@ export default function KPIDashboard() {
       </div>
     </div>
   );
+}
+// ---------- Authentication Gate ----------
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setCheckingAuth(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-slate-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
+
+  return <KPIDashboard onLogout={() => supabase.auth.signOut()} />;
 }
