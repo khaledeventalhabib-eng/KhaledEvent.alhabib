@@ -4,7 +4,7 @@ const supabase = createClient(
   "https://zebpzfrsmwgiswoaxxel.supabase.co",
   "sb_publishable_Z0A1tV4dRng56zuK4aZMfA_KrcsF9Ie"
 );
-import { Heart, Lock } from "lucide-react";
+import { Heart, Lock, MapPin } from "lucide-react";
 
 const RED = "#A3201E";
 const RED_DEEP = "#711512";
@@ -46,6 +46,12 @@ export default function Login() {
             Dr. Sulaiman Al Habib Medical Group
           </h1>
           <p className="text-xs text-slate-400 mt-1">KPI Dashboard — Organizer Sign-In</p>
+          <div
+            className="flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-xs font-semibold"
+            style={{ backgroundColor: BEIGE, color: RED_DEEP }}
+          >
+            <MapPin className="w-3 h-3" /> Jeddah, Saudi Arabia
+          </div>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-3">
