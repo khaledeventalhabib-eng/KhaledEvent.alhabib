@@ -26,6 +26,8 @@ import {
   CalendarDays,
   Clock,
   Languages,
+  Stethoscope as ClinicIcon,
+  MapPin,
 } from "lucide-react";
 import {
   ComposedChart,
@@ -63,6 +65,8 @@ const emptyForm = {
   patients: "",
   transferred: "",
   workingHours: "",
+  treatedOnSite: "",
+  treatedClinic: "",
 };
 
 // ---------- Period grouping helpers ----------
@@ -113,6 +117,8 @@ const I18N = {
     patients: "Patients",
     transferred: "Transferred to Hospital",
     workingHours: "Working Hours",
+    treatedOnSite: "Treated On-Site",
+    treatedClinic: "Treated at Clinic",
     avgPerEvent: "Avg Patients/Event",
     statsReport: "Statistics Report",
     daily: "Daily", weekly: "Weekly", monthly: "Monthly", yearly: "Yearly",
@@ -154,6 +160,8 @@ const I18N = {
     patients: "المرضى",
     transferred: "المحولون للمستشفى",
     workingHours: "ساعات العمل",
+    treatedOnSite: "عولجوا بالموقع",
+    treatedClinic: "عولجوا بالعيادة",
     avgPerEvent: "متوسط المرضى/فعالية",
     statsReport: "تقرير الإحصائيات",
     daily: "يومي", weekly: "أسبوعي", monthly: "شهري", yearly: "سنوي",
@@ -214,10 +222,13 @@ function KPIDashboard({ onLogout }) {
       patients: a.patients + num(r.patients),
       transferred: a.transferred + num(r.transferred),
       workingHours: a.workingHours + num(r.working_hours),
+      treatedOnSite: a.treatedOnSite + num(r.treated_onsite),
+      treatedClinic: a.treatedClinic + num(r.treated_clinic),
     }),
     {
       events: 0, visitors: 0, paramedics: 0, nurses: 0, doctors: 0,
-      ambulances: 0, golf: 0, clinics: 0, patients: 0, transferred: 0, workingHours: 0,
+      ambulances: 0, golf: 0, clinics: 0, patients: 0, transferred: 0,
+      workingHours: 0, treatedOnSite: 0, treatedClinic: 0,
     }
   );
 
@@ -230,7 +241,7 @@ function KPIDashboard({ onLogout }) {
 
   const trend = (key) => {
     if (rows.length < 2) return 0;
-    const map = { workingHours: "working_hours" };
+    const map = { workingHours: "working_hours", treatedOnSite: "treated_onsite", treatedClinic: "treated_clinic" };
     const field = map[key] || key;
     const last = num(rows[rows.length - 1][field]);
     const prev = num(rows[rows.length - 2][field]);
@@ -255,6 +266,8 @@ function KPIDashboard({ onLogout }) {
       patients: num(form.patients),
       transferred: num(form.transferred),
       working_hours: num(form.workingHours),
+      treated_onsite: num(form.treatedOnSite),
+      treated_clinic: num(form.treatedClinic),
     };
     const { data, error } = await supabase
       .from("events_kpi")
@@ -276,11 +289,13 @@ function KPIDashboard({ onLogout }) {
     const headers = [
       "Date", "Event", "Events", "Visitors", "Paramedics", "Nurses", "Doctors",
       "Ambulances", "Golf Carts", "Clinics", "Patients", "Transferred", "Working Hours",
+      "Treated On-Site", "Treated at Clinic",
     ];
     const lines = rows.map((r) =>
       [
         r.date, r.event, r.events, r.visitors, r.paramedics, r.nurses, r.doctors,
         r.ambulances, r.golf, r.clinics, r.patients, r.transferred, r.working_hours,
+        r.treated_onsite, r.treated_clinic,
       ].join(",")
     );
     const csv = [headers.join(","), ...lines].join("\n");
@@ -295,7 +310,7 @@ function KPIDashboard({ onLogout }) {
 
   // ---------- Styled Excel export ----------
   const exportExcel = () => {
-    const cols = 13;
+    const cols = 15;
     const style = `
       body{font-family:Arial, sans-serif;}
       table{border-collapse:collapse; direction:rtl;}
@@ -311,13 +326,14 @@ function KPIDashboard({ onLogout }) {
     html += `<table>`;
     html += `<tr><td class="title" colspan="${cols}">مجموعة د. سليمان الحبيب — فعاليات جدة (Dr. Sulaiman Al Habib Group — Jeddah Events)</td></tr>`;
     html += `<tr><td class="subtitle" colspan="${cols}">Report Date: ${new Date().toLocaleDateString("en-US")}</td></tr>`;
-    html += `<tr><th>Date</th><th>Event</th><th>Events</th><th>Visitors</th><th>Paramedics</th><th>Nurses</th><th>Doctors</th><th>Ambulances</th><th>Golf Carts</th><th>Clinics</th><th>Patients</th><th>Transferred</th><th>Working Hours</th></tr>`;
+    html += `<tr><th>Date</th><th>Event</th><th>Events</th><th>Visitors</th><th>Paramedics</th><th>Nurses</th><th>Doctors</th><th>Ambulances</th><th>Golf Carts</th><th>Clinics</th><th>Patients</th><th>Transferred</th><th>Working Hours</th><th>Treated On-Site</th><th>Treated at Clinic</th></tr>`;
     rows.forEach((r, i) => {
       html += `<tr class="${i % 2 ? "even" : "odd"}">
         <td>${r.date || ""}</td><td>${r.event || ""}</td><td>${r.events || 0}</td>
         <td>${num(r.visitors).toLocaleString("en-US")}</td><td>${r.paramedics || 0}</td><td>${r.nurses || 0}</td>
         <td>${r.doctors || 0}</td><td>${r.ambulances || 0}</td><td>${r.golf || 0}</td>
         <td>${r.clinics || 0}</td><td>${r.patients || 0}</td><td>${r.transferred || 0}</td><td>${r.working_hours || 0}</td>
+        <td>${r.treated_onsite || 0}</td><td>${r.treated_clinic || 0}</td>
       </tr>`;
     });
     html += `<tr class="totalrow">
@@ -325,6 +341,7 @@ function KPIDashboard({ onLogout }) {
       <td>${totals.paramedics}</td><td>${totals.nurses}</td><td>${totals.doctors}</td>
       <td>${totals.ambulances}</td><td>${totals.golf}</td><td>${totals.clinics}</td>
       <td>${totals.patients}</td><td>${totals.transferred}</td><td>${totals.workingHours}</td>
+      <td>${totals.treatedOnSite}</td><td>${totals.treatedClinic}</td>
     </tr>`;
     html += `</table></body></html>`;
 
@@ -352,6 +369,8 @@ function KPIDashboard({ onLogout }) {
     { label: t("patients"), value: totals.patients, icon: UserPlus, color: "bg-cyan-600", tKey: "patients" },
     { label: t("transferred"), value: totals.transferred, icon: ArrowRightLeft, color: `bg-[${RED}]`, tKey: "transferred" },
     { label: t("workingHours"), value: totals.workingHours, icon: Clock, color: "bg-slate-600", tKey: "workingHours" },
+    { label: t("treatedOnSite"), value: totals.treatedOnSite, icon: MapPin, color: "bg-orange-600", tKey: "treatedOnSite" },
+    { label: t("treatedClinic"), value: totals.treatedClinic, icon: ClinicIcon, color: "bg-teal-600", tKey: "treatedClinic" },
   ];
 
   const chartData = rows.map((r) => ({
@@ -381,6 +400,8 @@ function KPIDashboard({ onLogout }) {
     { k: "patients", p: t("patients"), t: "number" },
     { k: "transferred", p: t("transferredShort"), t: "number" },
     { k: "workingHours", p: t("workingHours"), t: "number" },
+    { k: "treatedOnSite", p: t("treatedOnSite"), t: "number" },
+    { k: "treatedClinic", p: t("treatedClinic"), t: "number" },
   ];
 
   const TrendBadge = ({ val }) => {
@@ -662,7 +683,7 @@ function KPIDashboard({ onLogout }) {
         <table className="w-full text-sm text-left">
           <thead style={{ backgroundColor: RED }}>
             <tr className="text-white">
-              {[t("date"), t("event"), t("events"), t("visitors"), t("paramedics"), t("nurses"), t("doctors"), t("ambulances"), t("golfCarts"), t("clinics"), t("patients"), t("transferredShort"), t("workingHours"), ""].map((h, i) => (
+              {[t("date"), t("event"), t("events"), t("visitors"), t("paramedics"), t("nurses"), t("doctors"), t("ambulances"), t("golfCarts"), t("clinics"), t("patients"), t("transferredShort"), t("workingHours"), t("treatedOnSite"), t("treatedClinic"), ""].map((h, i) => (
                 <th key={i} className="px-3 py-3 font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -683,6 +704,8 @@ function KPIDashboard({ onLogout }) {
                 <td className="px-3 py-2 text-center">{r.patients}</td>
                 <td className="px-3 py-2 text-center text-red-600 font-medium">{r.transferred}</td>
                 <td className="px-3 py-2 text-center">{r.working_hours}</td>
+                <td className="px-3 py-2 text-center">{r.treated_onsite}</td>
+                <td className="px-3 py-2 text-center">{r.treated_clinic}</td>
                 <td className="px-3 py-2 text-center no-print">
                   <button onClick={() => delRow(r.id)} className="text-red-400 hover:text-red-600">
                     <Trash2 className="w-4 h-4" />
@@ -705,6 +728,8 @@ function KPIDashboard({ onLogout }) {
               <td className="px-3 py-3 text-center">{totals.patients}</td>
               <td className="px-3 py-3 text-center text-red-600">{totals.transferred}</td>
               <td className="px-3 py-3 text-center">{totals.workingHours}</td>
+              <td className="px-3 py-3 text-center">{totals.treatedOnSite}</td>
+              <td className="px-3 py-3 text-center">{totals.treatedClinic}</td>
               <td className="no-print"></td>
             </tr>
           </tfoot>
