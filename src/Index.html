@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;900&family=Inter:wght@400;500;600;700&family=Cairo:wght@400;600;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --beige:#F4ECDD; --beige-deep:#E9DBC1; --card:#FFFCF6;
+    --red:#A3201E; --red-deep:#711512; --ink:#2B211A; --muted:#8A7A64; --line:#E3D6BC;
+    --ok:#2F6B3C; --ok-bg:#EAF3EA; --late:#8F1E1B; --late-bg:#F7E7E2; --warn:#B4691E; --warn-bg:#FCEFDD;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--beige); color:var(--ink); font-family:'Inter',sans-serif; min-height:100vh;}
+  body.lang-ar{font-family:'Cairo',sans-serif;}
+  body.lang-ar h1, body.lang-ar h2{font-family:'Cairo',sans-serif;}
+  .wrap{max-width:640px; margin:0 auto; padding:20px 16px 60px;}
+  .brand{display:flex; align-items:flex-start; gap:12px; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid var(--beige-deep);}
+  .brand .mark{width:44px;height:44px;border-radius:10px;background:var(--red-deep);display:flex;align-items:center;justify-content:center;color:var(--beige);font-weight:900;font-size:20px;flex-shrink:0;}
+  .brand .text{flex:1;}
+  .brand h1{font-family:'Fraunces',serif; font-size:17px;margin:0;font-weight:700;color:var(--red-deep); line-height:1.35;}
+  .brand p{margin:3px 0 0;font-size:11.5px;color:var(--muted);}
+  .lang-toggle{flex-shrink:0; background:var(--card); border:1.5px solid var(--red-deep); color:var(--red-deep); font-weight:700; font-size:12px; padding:7px 12px; border-radius:20px; cursor:pointer; font-family:'Inter',sans-serif;}
+  .tabs{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px;}
+  .tab{flex:1;text-align:center;padding:10px 6px;border-radius:9px;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer;user-select:none;transition:.15s;}
+  .tab.active{background:var(--red);color:#fff;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .card h2{font-family:'Fraunces',serif; font-size:15px;margin:0 0 14px;color:var(--red-deep);display:flex;align-items:center;gap:8px;font-weight:700;}
+  .card h2 .n{background:var(--red);color:#fff;width:20px;height:20px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-family:'IBM Plex Mono',monospace;}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:12px 0 5px;}
+  input, select{width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:9px; font-family:inherit; font-size:14px; background:#fffdf9; color:var(--ink);}
+  input:focus, select:focus{outline:none; border-color:var(--red);}
+  .row2{display:flex;gap:10px;} .row2>div{flex:1;}
+  .row3{display:flex;gap:8px;} .row3>div{flex:1; text-align:center;}
+  button{font-family:inherit; font-weight:700; font-size:14px; border:none; border-radius:9px; padding:12px 16px; cursor:pointer; transition:.15s; width:100%;}
+  .btn-main{background:var(--red-deep); color:#fff; margin-top:16px;}
+  .btn-main:active{transform:scale(.98);}
+  .btn-main:disabled{background:#c9beac;cursor:not-allowed;}
+  .btn-secondary{background:var(--beige); color:var(--red-deep); border:1.5px solid var(--red); margin-top:8px;}
+  .btn-ghost{background:#fff; color:var(--red-deep); border:1.5px solid var(--red-deep); margin-top:8px;}
+  .btn-locate{background:var(--beige); color:var(--red-deep); border:1.5px dashed var(--red); font-size:12.5px; padding:9px; margin-top:6px;}
+  .btn-photo{background:var(--beige); color:var(--red-deep); border:1.5px solid var(--line); font-size:12.5px; padding:9px; margin-top:8px;}
+  .status-box{margin-top:14px; padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.7; display:none;}
+  .status-box.show{display:block;}
+  .status-ok{background:var(--ok-bg); color:var(--ok); border:1px solid #c9e0cb;}
+  .status-late{background:var(--late-bg); color:var(--late); border:1px solid #ecc6be;}
+  .status-err{background:#FBF0E3; color:#8a5a12; border:1px solid #eed9ae;}
+  .rec{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:11px 12px; border-radius:10px; margin-bottom:8px; font-size:12.5px; border:1px solid var(--line);}
+  .rec.ok{background:var(--ok-bg);} .rec.late{background:var(--late-bg);}
+  .rec.flagged{border:1.5px solid var(--warn); background:var(--warn-bg);}
+  .rec .thumb{width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--beige-deep);flex-shrink:0;}
+  .rec .name{font-weight:700;} .rec .meta{color:var(--muted);font-size:11px;margin-top:2px;}
+  .rec .flag-note{color:var(--warn);font-size:10.5px;font-weight:700;margin-top:3px;}
+  .badge{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap;}
+  .badge.ok{background:var(--ok); color:#fff;} .badge.late{background:var(--late); color:#fff;}
+  .link-box{display:flex; gap:8px; margin-top:10px;}
+  .link-box input{flex:1; font-family:'IBM Plex Mono',monospace; font-size:11.5px; direction:ltr; text-align:left;}
+  .link-box button{width:auto; padding:10px 14px; font-size:12.5px;}
+  .event-pick{padding:12px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer; background:#fffdf9;}
+  .event-pick:hover{border-color:var(--red);}
+  .event-pick b{font-family:'Fraunces',serif; color:var(--red-deep);}
+  .lang-ar .event-pick b{font-family:'Cairo',sans-serif;}
+  .event-pick .meta{font-size:11.5px; color:var(--muted); margin-top:3px;}
+  .empty{text-align:center; padding:24px 10px; color:var(--muted); font-size:13px;}
+  .small{font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6;}
+  .pin-gate{display:flex; gap:8px; align-items:center;}
+  .photo-preview{margin-top:10px; width:100px; height:100px; border-radius:10px; object-fit:cover; border:1.5px solid var(--line); display:none;}
+  .stat-box{background:var(--beige); border-radius:10px; padding:10px 6px;}
+  .stat-box .num{font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:700; color:var(--red-deep);}
+  .stat-box .lbl{font-size:10.5px; color:var(--muted); margin-top:2px;}
+  .qr-wrap{text-align:center; margin-top:14px; padding:14px; background:var(--beige); border-radius:12px;}
+  .qr-wrap img{width:180px; height:180px; border-radius:8px; background:#fff; padding:8px;}
+  #printFlyer{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printFlyer, #printFlyer *{visibility:visible;}
+    #printFlyer{display:block; position:absolute; top:0; left:0; width:100%; text-align:center; padding:40px;}
+    #printFlyer img{width:320px; height:320px; margin:20px auto;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <div class="mark">✚</div>
+    <div class="text">
+      <h1 id="t_brandTitle">Dr. Sulaiman Al Habib Group Events<br>Attendance — Jeddah</h1>
+      <p id="t_brandSub">Location &amp; time-verified staff check-in</p>
+    </div>
+    <button class="lang-toggle" id="langToggleBtn" onclick="toggleLang()">العربية</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabCheckin" onclick="switchTab('checkin')"></div>
+    <div class="tab" id="tabAdmin" onclick="switchTab('admin')"></div>
+  </div>
+
+  <div id="viewCheckin">
+    <div id="eventPicker" style="display:none;">
+      <div class="card">
+        <h2><span class="n">1</span> <span id="t_pickTitle"></span></h2>
+        <div id="eventPickList"></div>
+        <div class="small" id="t_pickNote"></div>
+      </div>
+    </div>
+
+    <div id="checkinFlow" style="display:none;">
+      <div class="card" id="eventInfoCard">
+        <h2><span class="n">1</span> <span id="t_eventInfoTitle"></span></h2>
+        <div id="eventInfoText" class="small"></div>
+      </div>
+      <div class="card">
+        <h2><span class="n">2</span> <span id="t_registerTitle"></span></h2>
+        <label id="t_labelName"></label>
+        <input id="staffName">
+        <label id="t_labelId"></label>
+        <input id="staffId" inputmode="numeric">
+        <div id="venueCodeWrap" style="display:none;">
+          <label id="t_labelVenueCode"></label>
+          <input id="venueCodeInput">
+        </div>
+        <label id="t_labelPhoto"></label>
+        <input type="file" id="photoInput" accept="image/*" capture="user" style="display:none;" onchange="onPhotoSelected(event)">
+        <button class="btn-photo" id="t_btnPhoto" onclick="document.getElementById('photoInput').click()"></button>
+        <img id="photoPreview" class="photo-preview">
+        <button class="btn-main" id="btnCheckin" onclick="doCheckin()"></button>
+        <button class="btn-secondary" id="btnCheckout" onclick="doCheckout()"></button>
+        <div class="status-box" id="checkinStatus"></div>
+        <div class="small" id="t_checkinHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewAdmin" style="display:none;">
+    <div class="card" id="pinCard">
+      <h2><span class="n">🔒</span> <span id="t_pinTitle"></span></h2>
+      <div class="pin-gate">
+        <input id="pinInput" type="password">
+        <button class="btn-ghost" id="t_pinEnter" style="width:auto;white-space:nowrap;" onclick="unlockAdmin()"></button>
+      </div>
+      <div class="small" id="t_pinHint"></div>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+      <div class="card" id="eventsListCard">
+        <h2><span class="n">1</span> <span id="t_eventsListTitle"></span></h2>
+        <div id="adminEventsList"></div>
+        <button class="btn-ghost" id="t_btnCreateEvent" onclick="showCreateEvent()"></button>
+      </div>
+
+      <div id="createEventCard" style="display:none;">
+        <div class="card">
+          <h2><span class="n">2</span> <span id="t_eventSetupTitle"></span></h2>
+          <label id="t_labelEventName"></label>
+          <input id="cfgEventName">
+          <label id="t_labelVenue"></label>
+          <button class="btn-locate" id="t_btnUseLocation" onclick="useMyLocation()"></button>
+          <div class="row2" style="margin-top:10px;">
+            <div><label id="t_labelLat"></label><input id="cfgLat" inputmode="decimal"></div>
+            <div><label id="t_labelLng"></label><input id="cfgLng" inputmode="decimal"></div>
+          </div>
+          <label id="t_labelRadius"></label>
+          <input id="cfgRadius" inputmode="numeric" value="150">
+          <label id="t_labelStart"></label>
+          <input id="cfgStart" type="datetime-local">
+          <label id="t_labelEnd"></label>
+          <input id="cfgEnd" type="datetime-local">
+          <label id="t_labelGrace"></label>
+          <input id="cfgGrace" inputmode="numeric" value="10">
+          <label id="t_labelVenueCodeOpt"></label>
+          <input id="cfgVenueCode">
+          <button class="btn-main" id="t_btnSaveEvent" onclick="saveConfig()"></button>
+          <div class="status-box" id="cfgStatus"></div>
+        </div>
+      </div>
+
+      <div id="eventDetailCard" style="display:none;">
+        <div class="card">
+          <h2><span class="n">3</span> <span id="t_shareLinkTitle"></span></h2>
+          <label id="t_fullLink"></label>
+          <div class="link-box">
+            <input id="shareLink" readonly>
+            <button class="btn-ghost" id="t_btnCopy" style="margin-top:0;" onclick="copyLink('shareLink')"></button>
+          </div>
+          <label id="t_shortLinkLabel"></label>
+          <div class="link-box">
+            <input id="shortLink" readonly>
+            <button class="btn-ghost" id="t_btnCopyShort" style="margin-top:0;" onclick="copyLink('shortLink')"></button>
+          </div>
+          <div class="small" id="t_shareLinkNote"></div>
+
+          <div class="qr-wrap">
+            <img id="qrImage" src="">
+            <div class="small" id="t_qrNote" style="margin-top:8px;"></div>
+            <button class="btn-ghost" id="t_btnPrintQR" onclick="printFlyer()"></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2><span class="n">4</span> <span id="t_recordsTitle"></span></h2>
+          <div class="row3" id="statsRow" style="margin-bottom:14px;">
+            <div class="stat-box"><div class="num" id="statTotal">0</div><div class="lbl" id="t_statTotal"></div></div>
+            <div class="stat-box"><div class="num" id="statOnTime">0</div><div class="lbl" id="t_statOnTime"></div></div>
+            <div class="stat-box"><div class="num" id="statLate">0</div><div class="lbl" id="t_statLate"></div></div>
+            <div class="stat-box"><div class="num" id="statRate">0%</div><div class="lbl" id="t_statRate"></div></div>
+          </div>
+          <div class="row2">
+            <button class="btn-ghost" id="t_btnRefresh" onclick="loadRecords()"></button>
+            <button class="btn-ghost" id="t_btnExportExcel" onclick="exportExcel()"></button>
+          </div>
+          <button class="btn-ghost" id="t_btnExportCSV" onclick="exportCSV()"></button>
+          <div id="recordsList" style="margin-top:14px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="small" style="text-align:center;margin-top:10px;" id="t_footNote"></div>
+</div>
+
+<!-- Print-only flyer -->
+<div id="printFlyer">
+  <h2 id="flyerTitle" style="font-family:'Fraunces',serif;color:#711512;"></h2>
+  <p id="flyerSubtitle" style="color:#8A7A64;"></p>
+  <img id="flyerQR" src="">
+  <p id="flyerInstruction" style="font-size:16px;margin-top:10px;"></p>
+</div>
+
+<script>
+const initialEventId = "<?= initialEventId ?>";
+
+function callServer(fnName, args){
+  return new Promise((resolve, reject)=>{
+    google.script.run
+      .withSuccessHandler(function(res){ resolve(res); })
+      .withFailureHandler(function(err){ reject(err); })
+      [fnName].apply(null, args || []);
+  });
+}
+
+function getDeviceId(){
+  try{
+    let id = localStorage.getItem('attendance_device_id');
+    if(!id){
+      id = 'dev-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+      localStorage.setItem('attendance_device_id', id);
+    }
+    return id;
+  }catch(e){
+    return 'dev-unknown';
+  }
+}
+
+const I18N = {
+  en: {
+    locale:'en-GB', toggleLabel:'العربية',
+    brandTitle:'Dr. Sulaiman Al Habib Group Events<br>Attendance — Jeddah',
+    brandSub:'Location & time-verified staff check-in',
+    tabCheckin:'Check-In', tabAdmin:'Organizer Panel',
+    pickTitle:"Select Today's Event",
+    pickNote:'Multiple events on the same day each have their own link and their own attendance list. If you were given a direct link, open it instead of picking manually.',
+    noEvents:'No events have been set up yet. Ask the organizer to create one from the Organizer Panel.',
+    eventInfoTitle:'Event Details', registerTitle:'Register Your Attendance',
+    labelName:'Full Name', placeholderName:'e.g. Dr. Ahmed Al Ghamdi',
+    labelId:'National ID', placeholderId:'e.g. 1023456789',
+    labelVenueCode:'Venue Verification Code', placeholderVenueCode:'Shown on-site at the venue entrance',
+    labelPhoto:'Live Photo (identity check)', btnPhoto:'📷 Take a Live Photo', btnCheckin:'Check In Now',
+    btnCheckout:'🚪 Check Out Now',
+    checkinHelp:"Your GPS location is verified against the event venue, and your check-in time is compared automatically to the event's start time. A live photo is required so the organizer can confirm you personally checked in — not a colleague on your behalf. Don't forget to Check Out when you leave.",
+    pinTitle:'Organizer Sign-In', pinEnter:'Enter',
+    pinHint:'First time here? Choose any PIN — it will become your organizer PIN for all events you create.',
+    eventsListTitle:"Today's Events", btnCreateEvent:'+ Create New Event',
+    noEventsAdmin:'No events yet. Create your first one below.',
+    eventSetupTitle:'Event Setup',
+    labelEventName:'Event Name', placeholderEventName:'e.g. Dr. Sulaiman Al Habib Group — Jeddah Morning Session',
+    labelVenue:'Venue Location (GPS)', btnUseLocation:'📍 Use My Current Location as Venue',
+    labelLat:'Latitude', labelLng:'Longitude',
+    labelRadius:'Acceptance Radius (meters)', placeholderRadius:'e.g. 150',
+    labelStart:'Event Start Time',
+    labelEnd:'Event End Time (optional, enables early-departure detection)',
+    labelGrace:'Grace Period Before Marked Late (minutes)', placeholderGrace:'e.g. 10',
+    labelVenueCodeOpt:'Venue Verification Code (optional, extra proxy-check)', placeholderVenueCodeOpt:'e.g. display this code on-site and change it periodically',
+    btnSaveEvent:'Save Event',
+    shareLinkTitle:'Shareable Check-In Link',
+    fullLink:'Full Link',
+    shortLinkLabel:'Short Link (easier to share)',
+    shareLinkNote:'Share this exact link with staff for this specific event. Each event has its own unique link and its own attendance list.',
+    qrNote:'Print this QR code and post it at the venue entrance for quick check-in.',
+    btnPrintQR:'🖨️ Print QR Flyer',
+    recordsTitle:'Attendance Records', btnRefresh:'Refresh', btnExportCSV:'Export CSV', btnExportExcel:'Export Excel', btnCopy:'Copy',
+    statTotal:'Total', statOnTime:'On Time', statLate:'Late', statRate:'On-Time Rate',
+    footNote:'Note on identity assurance: GPS + timestamp + a required live photo make proxy check-ins impractical, but this is a working prototype, not biometric verification. Data is stored in your own Google Sheet — free, and fully under your control.',
+    fillNameId:'Please enter your full name and national ID.',
+    photoRequired:'A live photo is required to verify your identity.',
+    noEventSelected:'No event selected.', eventNotFound:'This event could not be found.',
+    venueCodeWrong:'Venue verification code is incorrect. Check the code displayed on-site.',
+    alreadyIn:(t,st)=>`You already checked in at ${t} (${st}).`,
+    onTimeWord:'on time', lateWord:(m)=>`late by ${m} minutes`,
+    verifyingLoc:'Verifying location...', checkInNowBtn:'Check In Now',
+    noGeoSupport:'Your browser does not support location access.',
+    outsideVenue:(d)=>`You are outside the event venue (about ${d} m away). Move closer to the venue and try again.`,
+    tooEarly:'Check-in is not open yet. It opens 1 hour before the event start time.',
+    tooLate:'The check-in window for this event has closed.',
+    savedLate:(m)=>`Checked in, but you are late by ${m} minute(s) against the scheduled start time.`,
+    savedOk:'Checked in successfully, on time. Welcome.',
+    saveFail:'Could not save your check-in. Please try again.',
+    locFail:'Could not access your location. Please allow location permission in your browser and try again.',
+    enterPin:'Enter a PIN', wrongPin:'Incorrect PIN', pinCheckFail:'Could not verify PIN, try again.',
+    fillEventForm:'Please fill in event name, venue location, radius, and start time.',
+    eventSaved:'Event saved successfully.', saveFailGeneric:'Something went wrong while saving. Try again.',
+    noCheckins:'No check-ins yet for this event.', loadFail:'Could not load records.', loading:'Loading...',
+    noExport:'No records to export yet.',
+    badgeOnTime:'On time', badgeLate:(m)=>`Late ${m}m`, fromVenue:'m from venue',
+    locGetFail:(m)=>'Could not get location: '+m,
+    networkErr:'Could not reach the server. Please try again.',
+    flyerInstruction:'Scan this code to check in for this event',
+    sharedDeviceWarning:'⚠️ Same phone used for another staff member — please verify in person',
+    needIdToCheckout:'Please enter your National ID first.',
+    checkoutOk:'Checked out successfully. Thank you.',
+    checkoutAlready:(t)=>`You already checked out at ${t}.`,
+    checkoutNotIn:'No check-in found for this National ID at this event.',
+    checkoutFail:'Could not save check-out. Try again.',
+    checkedOutAt:'Checked out at', duration:'Duration present', leftEarly:'⚠️ Left before event ended', noCheckout:'⚠️ No check-out recorded'
+  },
+  ar: {
+    locale:'ar-SA', toggleLabel:'English',
+    brandTitle:'مجموعة د. سليمان الحبيب<br>تحضير الفعاليات — جدة',
+    brandSub:'تسجيل حضور محقّق بالموقع والوقت',
+    tabCheckin:'تسجيل الحضور', tabAdmin:'لوحة المنظم',
+    pickTitle:'اختر فعالية اليوم',
+    pickNote:'كل فعالية بنفس اليوم لها رابطها الخاص وسجل حضور مستقل. إذا وصلك رابط مباشر، افتحه بدل الاختيار يدويًا.',
+    noEvents:'لم يتم إعداد أي فعالية بعد. اطلب من المنظم إنشاءها من لوحة المنظم.',
+    eventInfoTitle:'بيانات الفعالية', registerTitle:'تسجيل حضورك',
+    labelName:'الاسم الكامل', placeholderName:'مثال: د. أحمد الغامدي',
+    labelId:'رقم الهوية', placeholderId:'مثال: 1023456789',
+    labelVenueCode:'رمز تحقق الموقع', placeholderVenueCode:'الرمز المعروض داخل موقع الفعالية',
+    labelPhoto:'صورة حيّة (تحقق الهوية)', btnPhoto:'📷 التقط صورة حيّة', btnCheckin:'سجّل حضورك الآن',
+    btnCheckout:'🚪 سجّل خروجك الآن',
+    checkinHelp:'يتم التحقق من موقعك الفعلي مقابل موقع الفعالية، ويُقارَن وقت تسجيلك تلقائيًا بموعد بدء الفعالية. الصورة الحيّة إلزامية حتى يتأكد المنظم أنك من سجّل الحضور فعليًا وليس زميل بدلاً عنك. لا تنسَ تسجيل خروجك عند المغادرة.',
+    pinTitle:'دخول المنظم', pinEnter:'دخول',
+    pinHint:'أول مرة هنا؟ اختر أي رمز سري — وسيصبح رمزك الخاص لجميع الفعاليات التي تنشئها.',
+    eventsListTitle:'فعاليات اليوم', btnCreateEvent:'+ إنشاء فعالية جديدة',
+    noEventsAdmin:'لا توجد فعاليات بعد. أنشئ أول فعالية بالأسفل.',
+    eventSetupTitle:'إعداد الفعالية',
+    labelEventName:'اسم الفعالية', placeholderEventName:'مثال: مجموعة د. سليمان الحبيب - جلسة صباحية بجدة',
+    labelVenue:'موقع الفعالية (GPS)', btnUseLocation:'📍 استخدام موقعي الحالي كموقع الفعالية',
+    labelLat:'خط العرض', labelLng:'خط الطول',
+    labelRadius:'نطاق القبول (بالمتر)', placeholderRadius:'مثال: 150',
+    labelStart:'موعد بدء الفعالية',
+    labelEnd:'موعد انتهاء الفعالية (اختياري، يفعّل كشف المغادرة المبكرة)',
+    labelGrace:'مهلة السماح قبل اعتبار الحضور متأخرًا (دقائق)', placeholderGrace:'مثال: 10',
+    labelVenueCodeOpt:'رمز تحقق الموقع (اختياري، طبقة إضافية لمنع الانتحال)', placeholderVenueCodeOpt:'اعرض هذا الرمز داخل الموقع وغيّره دوريًا',
+    btnSaveEvent:'حفظ الفعالية',
+    shareLinkTitle:'رابط تسجيل الحضور',
+    fullLink:'الرابط الكامل',
+    shortLinkLabel:'الرابط المختصر (أسهل للمشاركة)',
+    shareLinkNote:'شارك هذا الرابط تحديدًا مع الكادر الخاص بهذه الفعالية. كل فعالية لها رابط مستقل وسجل حضور منفصل.',
+    qrNote:'اطبع رمز QR هذا وعلّقه عند مدخل الفعالية للتحضير السريع.',
+    btnPrintQR:'🖨️ طباعة ملصق QR',
+    recordsTitle:'سجل الحضور', btnRefresh:'تحديث', btnExportCSV:'تصدير CSV', btnExportExcel:'تصدير إكسل', btnCopy:'نسخ',
+    statTotal:'الإجمالي', statOnTime:'في الوقت', statLate:'متأخر', statRate:'نسبة الالتزام',
+    footNote:'ملاحظة حول التحقق من الهوية: الموقع + الوقت + الصورة الحيّة الإلزامية تجعل انتحال الحضور غير عملي، لكن هذا نموذج عملي وليس تحققًا بيومترياً. البيانات تُحفظ في شيت جوجل الخاص بك — مجاني بالكامل وتحت سيطرتك التامة.',
+    fillNameId:'الرجاء إدخال الاسم الكامل ورقم الهوية.',
+    photoRequired:'الصورة الحيّة إلزامية للتحقق من هويتك.',
+    noEventSelected:'لم يتم اختيار فعالية.', eventNotFound:'تعذر العثور على هذه الفعالية.',
+    venueCodeWrong:'رمز تحقق الموقع غير صحيح. تحقق من الرمز المعروض داخل الموقع.',
+    alreadyIn:(t,st)=>`تم تسجيل حضورك مسبقًا الساعة ${t} (${st}).`,
+    onTimeWord:'في الوقت', lateWord:(m)=>`متأخر ${m} دقيقة`,
+    verifyingLoc:'جاري التحقق من الموقع...', checkInNowBtn:'سجّل حضورك الآن',
+    noGeoSupport:'المتصفح لا يدعم الوصول للموقع.',
+    outsideVenue:(d)=>`أنت خارج نطاق الفعالية (حوالي ${d} متر). اقترب من الموقع وحاول مجددًا.`,
+    tooEarly:'التسجيل غير مفتوح بعد. يفتح قبل موعد الفعالية بساعة.',
+    tooLate:'انتهت فترة تسجيل الحضور لهذه الفعالية.',
+    savedLate:(m)=>`تم تسجيل حضورك، لكنك متأخر ${m} دقيقة عن الموعد المحدد.`,
+    savedOk:'تم تسجيل حضورك بنجاح وفي الوقت المحدد. أهلاً بك.',
+    saveFail:'تعذر حفظ تسجيل الحضور. حاول مرة أخرى.',
+    locFail:'تعذر الوصول لموقعك. الرجاء السماح بصلاحية الموقع من المتصفح والمحاولة مجددًا.',
+    enterPin:'أدخل رمزًا سريًا', wrongPin:'رمز غير صحيح', pinCheckFail:'تعذر التحقق من الرمز، حاول مجددًا.',
+    fillEventForm:'الرجاء تعبئة اسم الفعالية، موقعها، النطاق، وموعد البدء.',
+    eventSaved:'تم حفظ الفعالية بنجاح.', saveFailGeneric:'حدث خطأ أثناء الحفظ، حاول مرة أخرى.',
+    noCheckins:'لا توجد تسجيلات حضور بعد لهذه الفعالية.', loadFail:'تعذر تحميل السجل.', loading:'جاري التحميل...',
+    noExport:'لا توجد سجلات لتصديرها بعد.',
+    badgeOnTime:'في الوقت', badgeLate:(m)=>`متأخر ${m} د`, fromVenue:'م من الموقع',
+    locGetFail:(m)=>'تعذر تحديد الموقع: '+m,
+    networkErr:'تعذر الوصول للخادم. حاول مرة أخرى.',
+    flyerInstruction:'امسح هذا الرمز لتسجيل حضورك بهذه الفعالية',
+    sharedDeviceWarning:'⚠️ نفس الجوال استُخدم لموظف ثاني — تحقق شخصيًا',
+    needIdToCheckout:'الرجاء إدخال رقم الهوية أولاً.',
+    checkoutOk:'تم تسجيل خروجك بنجاح. شكرًا لك.',
+    checkoutAlready:(t)=>`سجلت خروجك مسبقًا الساعة ${t}.`,
+    checkoutNotIn:'لم يتم العثور على تسجيل دخول بهذا الرقم لهذه الفعالية.',
+    checkoutFail:'تعذر حفظ تسجيل الخروج. حاول مرة أخرى.',
+    checkedOutAt:'وقت الخروج', duration:'مدة التواجد', leftEarly:'⚠️ غادر قبل انتهاء الفعالية', noCheckout:'⚠️ لم يسجل خروج'
+  }
+};
+
+let currentLang = 'en';
+let adminUnlocked = false;
+let currentEventId = null;
+let currentEventCfg = null;
+let selectedPhotoBase64 = null;
+let openEventId = null;
+let openEventName = '';
+
+function applyLanguage(lang){
+  currentLang = lang;
+  const d = I18N[lang];
+  document.getElementById('htmlRoot').setAttribute('lang', lang);
+  document.getElementById('htmlRoot').setAttribute('dir', lang==='ar' ? 'rtl' : 'ltr');
+  document.body.classList.toggle('lang-ar', lang==='ar');
+
+  document.getElementById('t_brandTitle').innerHTML = d.brandTitle;
+  document.getElementById('t_brandSub').textContent = d.brandSub;
+  document.getElementById('langToggleBtn').textContent = d.toggleLabel;
+  document.getElementById('tabCheckin').textContent = d.tabCheckin;
+  document.getElementById('tabAdmin').textContent = d.tabAdmin;
+  document.getElementById('t_pickTitle').textContent = d.pickTitle;
+  document.getElementById('t_pickNote').textContent = d.pickNote;
+  document.getElementById('t_eventInfoTitle').textContent = d.eventInfoTitle;
+  document.getElementById('t_registerTitle').textContent = d.registerTitle;
+  document.getElementById('t_labelName').textContent = d.labelName;
+  document.getElementById('staffName').placeholder = d.placeholderName;
+  document.getElementById('t_labelId').textContent = d.labelId;
+  document.getElementById('staffId').placeholder = d.placeholderId;
+  document.getElementById('t_labelVenueCode').textContent = d.labelVenueCode;
+  document.getElementById('venueCodeInput').placeholder = d.placeholderVenueCode;
+  document.getElementById('t_labelPhoto').textContent = d.labelPhoto;
+  document.getElementById('t_btnPhoto').textContent = d.btnPhoto;
+  document.getElementById('btnCheckin').textContent = d.btnCheckin;
+  document.getElementById('btnCheckout').textContent = d.btnCheckout;
+  document.getElementById('t_checkinHelp').textContent = d.checkinHelp;
+  document.getElementById('t_pinTitle').textContent = d.pinTitle;
+  document.getElementById('t_pinEnter').textContent = d.pinEnter;
+  document.getElementById('t_pinHint').textContent = d.pinHint;
+  document.getElementById('t_eventsListTitle').textContent = d.eventsListTitle;
+  document.getElementById('t_btnCreateEvent').textContent = d.btnCreateEvent;
+  document.getElementById('t_eventSetupTitle').textContent = d.eventSetupTitle;
+  document.getElementById('t_labelEventName').textContent = d.labelEventName;
+  document.getElementById('cfgEventName').placeholder = d.placeholderEventName;
+  document.getElementById('t_labelVenue').textContent = d.labelVenue;
+  document.getElementById('t_btnUseLocation').textContent = d.btnUseLocation;
+  document.getElementById('t_labelLat').textContent = d.labelLat;
+  document.getElementById('t_labelLng').textContent = d.labelLng;
+  document.getElementById('t_labelRadius').textContent = d.labelRadius;
+  document.getElementById('cfgRadius').placeholder = d.placeholderRadius;
+  document.getElementById('t_labelStart').textContent = d.labelStart;
+  document.getElementById('t_labelEnd').textContent = d.labelEnd;
+  document.getElementById('t_labelGrace').textContent = d.labelGrace;
+  document.getElementById('cfgGrace').placeholder = d.placeholderGrace;
+  document.getElementById('t_labelVenueCodeOpt').textContent = d.labelVenueCodeOpt;
+  document.getElementById('cfgVenueCode').placeholder = d.placeholderVenueCodeOpt;
+  document.getElementById('t_btnSaveEvent').textContent = d.btnSaveEvent;
+  document.getElementById('t_shareLinkTitle').textContent = d.shareLinkTitle;
+  document.getElementById('t_fullLink').textContent = d.fullLink;
+  document.getElementById('t_btnCopy').textContent = d.btnCopy;
+  document.getElementById('t_shortLinkLabel').textContent = d.shortLinkLabel;
+  document.getElementById('t_btnCopyShort').textContent = d.btnCopy;
+  document.getElementById('t_shareLinkNote').textContent = d.shareLinkNote;
+  document.getElementById('t_qrNote').textContent = d.qrNote;
+  document.getElementById('t_btnPrintQR').textContent = d.btnPrintQR;
+  document.getElementById('t_recordsTitle').textContent = d.recordsTitle;
+  document.getElementById('t_btnRefresh').textContent = d.btnRefresh;
+  document.getElementById('t_btnExportCSV').textContent = d.btnExportCSV;
+  document.getElementById('t_btnExportExcel').textContent = d.btnExportExcel;
+  document.getElementById('t_footNote').textContent = d.footNote;
+  document.getElementById('t_statTotal').textContent = d.statTotal;
+  document.getElementById('t_statOnTime').textContent = d.statOnTime;
+  document.getElementById('t_statLate').textContent = d.statLate;
+  document.getElementById('t_statRate').textContent = d.statRate;
+
+  if(document.getElementById('eventPicker').style.display !== 'none') refreshPickerList();
+  if(currentEventId && currentEventCfg) renderEventInfo(currentEventCfg);
+  if(openEventId) loadRecords();
+  if(adminUnlocked) loadAdminEvents();
+}
+
+function toggleLang(){ applyLanguage(currentLang === 'en' ? 'ar' : 'en'); }
+
+function switchTab(t){
+  document.getElementById('tabCheckin').classList.toggle('active', t==='checkin');
+  document.getElementById('tabAdmin').classList.toggle('active', t==='admin');
+  document.getElementById('viewCheckin').style.display = t==='checkin' ? 'block':'none';
+  document.getElementById('viewAdmin').style.display = t==='admin' ? 'block':'none';
+  if(t==='admin' && adminUnlocked) loadAdminEvents();
+}
+
+function haversine(lat1, lon1, lat2, lon2){
+  const R = 6371000;
+  const toRad = d => d * Math.PI/180;
+  const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function refreshPickerList(){
+  const d = I18N[currentLang];
+  const listEl = document.getElementById('eventPickList');
+  try{
+    const events = await callServer('getEvents', []);
+    if(!events || events.length===0){
+      listEl.innerHTML = `<div class="empty">${d.noEvents}</div>`;
+    } else {
+      listEl.innerHTML = events.map(ev=>`
+        <div class="event-pick" onclick="pickEvent('${ev.id}')">
+          <b>${ev.name}</b>
+          <div class="meta">${new Date(ev.startTime).toLocaleString(d.locale)}</div>
+        </div>
+      `).join('');
+    }
+  }catch(e){
+    listEl.innerHTML = `<div class="empty">${d.networkErr}</div>`;
+  }
+}
+
+async function initCheckin(){
+  if(initialEventId){
+    try{
+      const cfg = await callServer('getEvent', [initialEventId]);
+      if(cfg){
+        currentEventId = initialEventId;
+        currentEventCfg = cfg;
+        renderEventInfo(cfg);
+        document.getElementById('checkinFlow').style.display = 'block';
+        return;
+      }
+    }catch(e){}
+  }
+  await refreshPickerList();
+  document.getElementById('eventPicker').style.display = 'block';
+}
+
+async function pickEvent(id){
+  const cfg = await callServer('getEvent', [id]);
+  if(!cfg) return;
+  currentEventId = id;
+  currentEventCfg = cfg;
+  renderEventInfo(cfg);
+  document.getElementById('eventPicker').style.display = 'none';
+  document.getElementById('checkinFlow').style.display = 'block';
+}
+
+function renderEventInfo(cfg){
+  const d = I18N[currentLang];
+  const el = document.getElementById('eventInfoText');
+  const start = new Date(cfg.startTime);
+  el.innerHTML = `<b>${cfg.eventName}</b><br>${d.labelStart}: ${start.toLocaleString(d.locale)}<br>${d.labelRadius}: ${cfg.radius}`;
+  document.getElementById('venueCodeWrap').style.display = cfg.venueCode ? 'block' : 'none';
+}
+
+function onPhotoSelected(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      const size = 160;
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(size/img.width, size/img.height);
+      const w = img.width*scale, h = img.height*scale;
+      ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
+      selectedPhotoBase64 = canvas.toDataURL('image/jpeg', 0.45);
+      const prev = document.getElementById('photoPreview');
+      prev.src = selectedPhotoBase64;
+      prev.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function doCheckin(){
+  const d = I18N[currentLang];
+  const name = document.getElementById('staffName').value.trim();
+  const id = document.getElementById('staffId').value.trim();
+  const venueCodeEntered = document.getElementById('venueCodeInput').value.trim();
+  const box = document.getElementById('checkinStatus');
+  const btn = document.getElementById('btnCheckin');
+  box.className = 'status-box show';
+
+  if(!name || !id){ box.className='status-box show status-err'; box.innerHTML = d.fillNameId; return; }
+  if(!selectedPhotoBase64){ box.className='status-box show status-err'; box.innerHTML = d.photoRequired; return; }
+  if(!currentEventId){ box.className='status-box show status-err'; box.innerHTML = d.noEventSelected; return; }
+
+  let cfg;
+  try{ cfg = await callServer('getEvent', [currentEventId]); }
+  catch(e){ box.className='status-box show status-err'; box.innerHTML = d.networkErr; return; }
+  if(!cfg){ box.className='status-box show status-err'; box.innerHTML = d.eventNotFound; return; }
+
+  if(cfg.venueCode){
+    if(venueCodeEntered.toLowerCase() !== String(cfg.venueCode).toLowerCase().trim()){
+      box.className='status-box show status-err'; box.innerHTML = d.venueCodeWrong; return;
+    }
+  }
+
+  const now0 = new Date();
+  const start0 = new Date(cfg.startTime);
+  const opensAt = new Date(start0.getTime() - 60*60000);
+  const closesAt = new Date(start0.getTime() + 6*60*60000);
+  if(now0 < opensAt){ box.className='status-box show status-err'; box.innerHTML = d.tooEarly; return; }
+  if(now0 > closesAt){ box.className='status-box show status-err'; box.innerHTML = d.tooLate; return; }
+
+  try{
+    const existing = await callServer('checkExisting', [currentEventId, id]);
+    if(existing && existing.exists){
+      box.className='status-box show status-ok';
+      const st = existing.status === 'ok' ? d.onTimeWord : d.lateWord(existing.lateMinutes);
+      box.innerHTML = d.alreadyIn(new Date(existing.timestamp).toLocaleTimeString(d.locale), st);
+      return;
+    }
+  }catch(e){}
+
+  btn.disabled = true;
+  btn.textContent = d.verifyingLoc;
+  if(!navigator.geolocation){
+    box.className='status-box show status-err'; box.innerHTML = d.noGeoSupport;
+    btn.disabled=false; btn.textContent = d.checkInNowBtn; return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const dist = haversine(pos.coords.latitude, pos.coords.longitude, cfg.lat, cfg.lng);
+    if(dist > cfg.radius){
+      box.className='status-box show status-err'; box.innerHTML = d.outsideVenue(Math.round(dist));
+      btn.disabled=false; btn.textContent = d.checkInNowBtn; return;
+    }
+    const now = new Date();
+    const start = new Date(cfg.startTime);
+    const deadline = new Date(start.getTime() + (cfg.graceMinutes||0)*60000);
+    const isLate = now > deadline;
+    const lateMinutes = isLate ? Math.round((now-deadline)/60000) : 0;
+
+    try{
+      const res = await callServer('doCheckin', [{
+        eventId: currentEventId, nationalId: id, name,
+        distance: Math.round(dist), timestamp: now.toISOString(),
+        status: isLate ? 'late':'ok', lateMinutes, photo: selectedPhotoBase64,
+        deviceId: getDeviceId()
+      }]);
+      if(res && res.alreadyExists){
+        box.className='status-box show status-ok';
+        const st = res.existing.status === 'ok' ? d.onTimeWord : d.lateWord(res.existing.lateMinutes);
+        box.innerHTML = d.alreadyIn(new Date(res.existing.timestamp).toLocaleTimeString(d.locale), st);
+      } else {
+        box.className = 'status-box show ' + (isLate ? 'status-late' : 'status-ok');
+        box.innerHTML = isLate ? d.savedLate(lateMinutes) : d.savedOk;
+      }
+    }catch(e){
+      box.className='status-box show status-err'; box.innerHTML = d.saveFail;
+    }
+    btn.disabled=false; btn.textContent = d.checkInNowBtn;
+  }, err=>{
+    box.className='status-box show status-err'; box.innerHTML = d.locFail;
+    btn.disabled=false; btn.textContent = d.checkInNowBtn;
+  }, {enableHighAccuracy:true, timeout:15000});
+}
+
+async function doCheckout(){
+  const d = I18N[currentLang];
+  const id = document.getElementById('staffId').value.trim();
+  const box = document.getElementById('checkinStatus');
+  box.className = 'status-box show';
+  if(!id){ box.className='status-box show status-err'; box.innerHTML = d.needIdToCheckout; return; }
+  if(!currentEventId){ box.className='status-box show status-err'; box.innerHTML = d.noEventSelected; return; }
+  try{
+    const res = await callServer('doCheckout', [currentEventId, id, new Date().toISOString()]);
+    if(res && res.ok){
+      box.className = 'status-box show status-ok';
+      box.innerHTML = d.checkoutOk;
+    } else if(res && res.alreadyCheckedOut){
+      box.className = 'status-box show status-ok';
+      box.innerHTML = d.checkoutAlready(new Date(res.checkoutTime).toLocaleTimeString(d.locale));
+    } else if(res && res.notCheckedIn){
+      box.className = 'status-box show status-err';
+      box.innerHTML = d.checkoutNotIn;
+    } else {
+      box.className = 'status-box show status-err';
+      box.innerHTML = d.checkoutFail;
+    }
+  }catch(e){
+    box.className = 'status-box show status-err';
+    box.innerHTML = d.checkoutFail;
+  }
+}
+
+async function unlockAdmin(){
+  const d = I18N[currentLang];
+  const pin = document.getElementById('pinInput').value.trim();
+  if(!pin){ alert(d.enterPin); return; }
+  try{
+    const res = await callServer('verifyPin', [pin]);
+    if(res && res.ok){ adminUnlocked = true; }
+    else { alert(d.wrongPin); return; }
+  }catch(e){ alert(d.pinCheckFail); return; }
+  document.getElementById('pinCard').style.display = 'none';
+  document.getElementById('adminPanel').style.display = 'block';
+  loadAdminEvents();
+}
+
+async function loadAdminEvents(){
+  const d = I18N[currentLang];
+  const el = document.getElementById('adminEventsList');
+  try{
+    const events = await callServer('getEvents', []);
+    if(!events || events.length===0){
+      el.innerHTML = `<div class="empty">${d.noEventsAdmin}</div>`;
+    } else {
+      el.innerHTML = events.map(ev=>`
+        <div class="event-pick" onclick="openEventDetail('${ev.id}', '${ev.name.replace(/'/g,"\\'")}')">
+          <b>${ev.name}</b>
+          <div class="meta">${new Date(ev.startTime).toLocaleString(d.locale)}</div>
+        </div>
+      `).join('');
+    }
+  }catch(e){
+    el.innerHTML = `<div class="empty">${d.networkErr}</div>`;
+  }
+  document.getElementById('createEventCard').style.display = 'none';
+  document.getElementById('eventDetailCard').style.display = 'none';
+}
+
+function showCreateEvent(){
+  document.getElementById('createEventCard').style.display = 'block';
+  document.getElementById('eventDetailCard').style.display = 'none';
+  document.getElementById('cfgEventName').value = '';
+  document.getElementById('cfgLat').value = '';
+  document.getElementById('cfgLng').value = '';
+  document.getElementById('cfgRadius').value = 150;
+  document.getElementById('cfgStart').value = '';
+  document.getElementById('cfgEnd').value = '';
+  document.getElementById('cfgGrace').value = 10;
+  document.getElementById('cfgVenueCode').value = '';
+}
+
+function useMyLocation(){
+  const d = I18N[currentLang];
+  if(!navigator.geolocation){ alert(d.noGeoSupport); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    document.getElementById('cfgLat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('cfgLng').value = pos.coords.longitude.toFixed(6);
+  }, err=>{ alert(d.locGetFail(err.message)); }, {enableHighAccuracy:true});
+}
+
+async function saveConfig(){
+  const d = I18N[currentLang];
+  const eventName = document.getElementById('cfgEventName').value.trim();
+  const lat = parseFloat(document.getElementById('cfgLat').value);
+  const lng = parseFloat(document.getElementById('cfgLng').value);
+  const radius = parseInt(document.getElementById('cfgRadius').value);
+  const startTime = document.getElementById('cfgStart').value;
+  const endTime = document.getElementById('cfgEnd').value;
+  const graceMinutes = parseInt(document.getElementById('cfgGrace').value || '0');
+  const venueCode = document.getElementById('cfgVenueCode').value.trim();
+  const box = document.getElementById('cfgStatus');
+  box.className = 'status-box show';
+
+  if(!eventName || isNaN(lat) || isNaN(lng) || !radius || !startTime){
+    box.classList.add('status-err'); box.innerHTML = d.fillEventForm; return;
+  }
+  try{
+    const res = await callServer('saveEvent', [{eventName, lat, lng, radius, startTime, graceMinutes, venueCode, endTime}]);
+    box.classList.remove('status-err'); box.classList.add('status-ok');
+    box.innerHTML = d.eventSaved;
+    setTimeout(()=> openEventDetail(res.id, eventName), 400);
+  }catch(e){
+    box.classList.add('status-err'); box.innerHTML = d.saveFailGeneric;
+  }
+}
+
+async function openEventDetail(id, name){
+  openEventId = id;
+  openEventName = name || '';
+  document.getElementById('eventsListCard').style.display = 'block';
+  document.getElementById('createEventCard').style.display = 'none';
+  document.getElementById('eventDetailCard').style.display = 'block';
+  const base = window.location.href.split('?')[0];
+  const fullLink = base + '?event=' + id;
+  document.getElementById('shareLink').value = fullLink;
+  document.getElementById('shortLink').value = 'Generating...';
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(fullLink);
+  document.getElementById('qrImage').src = qrUrl;
+  document.getElementById('flyerQR').src = 'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' + encodeURIComponent(fullLink);
+  try{
+    const shortUrl = await callServer('shortenUrl', [fullLink]);
+    document.getElementById('shortLink').value = shortUrl;
+  }catch(e){
+    document.getElementById('shortLink').value = fullLink;
+  }
+  loadRecords();
+}
+
+function copyLink(inputId){
+  const el = document.getElementById(inputId);
+  el.select();
+  document.execCommand('copy');
+}
+
+function printFlyer(){
+  const d = I18N[currentLang];
+  document.getElementById('flyerTitle').textContent = openEventName;
+  document.getElementById('flyerSubtitle').textContent = 'Dr. Sulaiman Al Habib Group — Jeddah';
+  document.getElementById('flyerInstruction').textContent = d.flyerInstruction;
+  window.print();
+}
+
+let currentEventEndTime = null;
+
+async function loadRecords(){
+  const d = I18N[currentLang];
+  if(!openEventId) return;
+  const list = document.getElementById('recordsList');
+  list.innerHTML = `<div class="empty">${d.loading}</div>`;
+  try{
+    const evCfg = await callServer('getEvent', [openEventId]);
+    currentEventEndTime = evCfg && evCfg.endTime ? new Date(evCfg.endTime) : null;
+
+    const records = await callServer('getRecords', [openEventId]);
+    const total = records ? records.length : 0;
+    const onTime = records ? records.filter(r=>r.status==='ok').length : 0;
+    const late = total - onTime;
+    const rate = total ? Math.round((onTime/total)*100) : 0;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statOnTime').textContent = onTime;
+    document.getElementById('statLate').textContent = late;
+    document.getElementById('statRate').textContent = rate + '%';
+
+    if(!records || records.length===0){
+      list.innerHTML = `<div class="empty">${d.noCheckins}</div>`;
+      return;
+    }
+    records.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+    window.__lastRecords = records;
+
+    const deviceMap = {};
+    records.forEach(r=>{
+      if(!r.deviceId) return;
+      if(!deviceMap[r.deviceId]) deviceMap[r.deviceId] = new Set();
+      deviceMap[r.deviceId].add(r.id);
+    });
+    const flaggedDevices = new Set(Object.keys(deviceMap).filter(k => deviceMap[k].size > 1));
+    const eventEnded = currentEventEndTime && new Date() > currentEventEndTime;
+
+    list.innerHTML = records.map(r=>{
+      const sharedDevice = r.deviceId && flaggedDevices.has(r.deviceId);
+      let departureNote = '';
+      let durationNote = '';
+      if(r.checkoutTime){
+        const inT = new Date(r.timestamp), outT = new Date(r.checkoutTime);
+        const mins = Math.round((outT-inT)/60000);
+        durationNote = `${d.checkedOutAt}: ${outT.toLocaleTimeString(d.locale)} · ${d.duration}: ${mins} min`;
+        if(currentEventEndTime && outT < new Date(currentEventEndTime.getTime() - 15*60000)){
+          departureNote = d.leftEarly;
+        }
+      } else if(eventEnded){
+        departureNote = d.noCheckout;
+      }
+      const flagged = sharedDevice || departureNote;
+      return `
+      <div class="rec ${r.status==='ok'?'ok':'late'} ${flagged?'flagged':''}">
+        <img class="thumb" src="${r.photo||''}">
+        <div style="flex:1;">
+          <div class="name">${r.name} <span style="font-weight:400;color:var(--muted);">#${r.id}</span></div>
+          <div class="meta">${new Date(r.timestamp).toLocaleString(d.locale)} · ${r.distance} ${d.fromVenue}</div>
+          ${durationNote ? `<div class="meta">${durationNote}</div>` : ''}
+          ${sharedDevice ? `<div class="flag-note">${d.sharedDeviceWarning}</div>` : ''}
+          ${departureNote ? `<div class="flag-note">${departureNote}</div>` : ''}
+        </div>
+        <span class="badge ${r.status==='ok'?'ok':'late'}">${r.status==='ok' ? d.badgeOnTime : d.badgeLate(r.lateMinutes)}</span>
+      </div>
+    `;}).join('');
+  }catch(e){
+    list.innerHTML = `<div class="empty">${d.networkErr}</div>`;
+  }
+}
+
+function exportCSV(){
+  const d = I18N[currentLang];
+  const records = window.__lastRecords || [];
+  if(records.length === 0){ alert(d.noExport); return; }
+  let csv = 'National ID,Name,Timestamp,Status,Late Minutes,Distance (m),Checkout Time\n';
+  records.forEach(r=>{
+    csv += `${r.id},"${r.name}",${new Date(r.timestamp).toLocaleString(d.locale)},${r.status==='ok'?'On time':'Late'},${r.lateMinutes},${r.distance},${r.checkoutTime ? new Date(r.checkoutTime).toLocaleString(d.locale) : ''}\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'attendance-'+openEventId+'.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportExcel(){
+  const records = window.__lastRecords || [];
+  if(records.length === 0){ alert(I18N[currentLang].noExport); return; }
+
+  const RED = '#A3201E', RED_DEEP='#711512', BEIGE='#F4ECDD', BEIGE_DEEP='#E9DBC1';
+  const style = `
+    body{font-family:Arial, sans-serif; direction:rtl;}
+    table{border-collapse:collapse;}
+    th{background:${RED}; color:#fff; padding:8px; text-align:center; font-weight:bold; border:1px solid ${RED_DEEP};}
+    td{padding:6px 10px; text-align:center; border:1px solid ${BEIGE_DEEP};}
+    .title{background:${RED_DEEP}; color:#fff; font-size:18px; font-weight:bold; padding:12px; text-align:center;}
+    .subtitle{background:${BEIGE}; color:${RED_DEEP}; font-size:12px; padding:6px; text-align:center;}
+    .even td{background:${BEIGE};}
+    .odd td{background:#fff;}
+  `;
+  const deviceMap = {};
+  records.forEach(r=>{
+    if(!r.deviceId) return;
+    if(!deviceMap[r.deviceId]) deviceMap[r.deviceId] = new Set();
+    deviceMap[r.deviceId].add(r.id);
+  });
+  const flaggedDevices = new Set(Object.keys(deviceMap).filter(k => deviceMap[k].size > 1));
+
+  let html = `<html><head><meta charset="UTF-8"><style>${style}</style></head><body><table>`;
+  html += `<tr><td class="title" colspan="8">كشف حضور الفعاليات — مجموعة د. سليمان الحبيب جدة<br>Events Attendance Report — Dr. Sulaiman Al Habib Group Jeddah</td></tr>`;
+  html += `<tr><td class="subtitle" colspan="8">${openEventName} — ${new Date().toLocaleDateString('en-GB')}</td></tr>`;
+  html += `<tr><th>National ID<br>رقم الهوية</th><th>Name<br>الاسم</th><th>Check-in<br>الدخول</th><th>Status<br>الحالة</th><th>Late (min)<br>التأخير</th><th>Distance (m)<br>المسافة</th><th>Check-out<br>الخروج</th><th>Flag<br>ملاحظة</th></tr>`;
+  records.forEach((r,i)=>{
+    const flagged = r.deviceId && flaggedDevices.has(r.deviceId);
+    html += `<tr class="${i%2?'even':'odd'}">
+      <td>${r.id}</td><td>${r.name}</td><td>${new Date(r.timestamp).toLocaleString('en-GB')}</td>
+      <td>${r.status==='ok'?'On time / في الوقت':'Late / متأخر'}</td><td>${r.lateMinutes}</td><td>${r.distance}</td>
+      <td>${r.checkoutTime ? new Date(r.checkoutTime).toLocaleString('en-GB') : '—'}</td>
+      <td>${flagged ? 'Shared device / جهاز مشترك' : ''}</td>
+    </tr>`;
+  });
+  html += `</table></body></html>`;
+
+  const blob = new Blob(["\uFEFF" + html], {type:'application/vnd.ms-excel'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'attendance-'+openEventId+'.xls'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+applyLanguage('en');
+initCheckin();
+</script>
+</body>
+</html>
