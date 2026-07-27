@@ -241,6 +241,8 @@ function KPIDashboard({ onLogout }) {
             <input
               autoFocus
               type={type}
+              lang="en"
+              inputMode={type === "number" ? "decimal" : undefined}
               step="0.1"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
