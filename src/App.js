@@ -44,7 +44,6 @@ import {
   Legend,
 } from "recharts";
 
-// ---------- Brand colors ----------
 const RED = "#A3201E";
 const RED_DEEP = "#711512";
 const BEIGE = "#F4ECDD";
@@ -71,7 +70,6 @@ const emptyForm = {
   treatedClinic: "",
 };
 
-// ---------- Period grouping helpers ----------
 function getISOWeekKey(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d)) return "unknown";
@@ -95,7 +93,6 @@ function periodKey(dateStr, mode) {
   return dateStr;
 }
 
-// ---------- Translations ----------
 const I18N = {
   en: {
     title: "Dr. Sulaiman Al Habib Medical Group",
@@ -195,8 +192,7 @@ function KPIDashboard({ onLogout }) {
   const [form, setForm] = useState(emptyForm);
   const [periodMode, setPeriodMode] = useState("monthly");
 
-  // ---------- Inline cell editing ----------
-  const [editing, setEditing] = useState(null); // { id, field }
+  const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState("");
 
   const startEdit = (id, field, value) => {
@@ -236,7 +232,6 @@ function KPIDashboard({ onLogout }) {
     if (e.key === "Escape") cancelEdit();
   };
 
-  // Renders one editable table cell
   const EditCell = ({ id, field, value, align = "center", type = "number" }) => {
     const isEditing = editing && editing.id === id && editing.field === field;
     if (isEditing) {
@@ -276,7 +271,6 @@ function KPIDashboard({ onLogout }) {
     );
   };
 
-  // ---------- Fetch from Supabase ----------
   const fetchRows = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -291,7 +285,6 @@ function KPIDashboard({ onLogout }) {
     fetchRows();
   }, []);
 
-  // ---------- Totals ----------
   const totals = rows.reduce(
     (a, r) => ({
       events: a.events + num(r.events),
@@ -332,7 +325,6 @@ function KPIDashboard({ onLogout }) {
     return (((last - prev) / prev) * 100).toFixed(0);
   };
 
-  // ---------- Add / Delete (Supabase) ----------
   const addRow = async () => {
     if (!form.date) return;
     const payload = {
@@ -367,7 +359,6 @@ function KPIDashboard({ onLogout }) {
     if (!error) setRows(rows.filter((r) => r.id !== id));
   };
 
-  // ---------- CSV Export ----------
   const exportCSV = () => {
     const headers = [
       "Date", "Event", "Events", "Visitors", "Paramedics", "Nurses", "Doctors",
@@ -391,7 +382,6 @@ function KPIDashboard({ onLogout }) {
     URL.revokeObjectURL(url);
   };
 
-  // ---------- Styled Excel export ----------
   const exportExcel = () => {
     const cols = 15;
     const style = `
@@ -439,7 +429,6 @@ function KPIDashboard({ onLogout }) {
 
   const printPDF = () => window.print();
 
-  // ---------- KPI cards ----------
   const kpis = [
     { label: t("events"), value: totals.events, icon: Activity, color: "bg-emerald-500", tKey: "events" },
     { label: t("visitors"), value: totals.visitors.toLocaleString("en-US"), icon: Eye, color: `bg-[${RED}]`, tKey: "visitors" },
@@ -504,7 +493,6 @@ function KPIDashboard({ onLogout }) {
     );
   };
 
-  // ---------- Statistics Report ----------
   const periodLabels = {
     daily: { en: "Daily", ar: "يومي" },
     weekly: { en: "Weekly", ar: "أسبوعي" },
@@ -540,7 +528,6 @@ function KPIDashboard({ onLogout }) {
         }
       `}</style>
 
-      {/* Header */}
       <div
         className="rounded-2xl p-6 mb-6 shadow-lg flex flex-wrap items-center gap-4 print-shadow"
         style={{ background: `linear-gradient(to right, ${RED_DEEP}, ${RED})` }}
@@ -562,3 +549,287 @@ function KPIDashboard({ onLogout }) {
           </button>
           <div className="text-white text-center bg-white/15 rounded-xl px-5 py-3">
             <div className="text-3xl font-bold">{transferRate}%</div>
+            <div className="text-xs" style={{ color: BEIGE }}>{t("transferRate")}</div>
+          </div>
+          <div className="text-white text-center bg-white/15 rounded-xl px-5 py-3">
+            <div className="text-3xl font-bold">{totals.visitors.toLocaleString("en-US")}</div>
+            <div className="text-xs" style={{ color: BEIGE }}>{t("totalVisitors")}</div>
+          </div>
+          <div className="flex flex-col gap-2 no-print">
+            <button
+              onClick={onLogout}
+              className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium text-white border border-white/30"
+              style={{ backgroundColor: "rgba(255,255,255,0.15)" }}
+            >
+              {t("logout")}
+            </button>
+            <button
+              onClick={printPDF}
+              className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium bg-white hover:bg-slate-50"
+              style={{ color: RED }}
+            >
+              <Printer className="w-4 h-4" /> {t("printPDF")}
+            </button>
+            <button
+              onClick={exportExcel}
+              className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium text-white"
+              style={{ backgroundColor: RED_DEEP }}
+            >
+              <Download className="w-4 h-4" /> {t("exportExcel")}
+            </button>
+            <button
+              onClick={exportCSV}
+              className="rounded-xl px-4 py-2 flex items-center gap-2 font-medium border"
+              style={{ backgroundColor: "white", color: RED_DEEP, borderColor: RED_DEEP }}
+            >
+              <Download className="w-4 h-4" /> {t("exportCSV")}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {loading && (
+        <div className="text-center text-slate-400 mb-4">{t("loading")}</div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6 avoid-break">
+        {kpis.map((k, i) => (
+          <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition print-shadow">
+            <div className="flex items-start justify-between">
+              <div className={`${k.color.startsWith("bg-[") ? "" : k.color} w-10 h-10 rounded-lg flex items-center justify-center mb-2`}
+                   style={k.color.startsWith("bg-[") ? { backgroundColor: RED } : {}}>
+                <k.icon className="text-white w-5 h-5" />
+              </div>
+              <TrendBadge val={trend(k.tKey)} />
+            </div>
+            <div className="text-2xl font-bold text-slate-800">{k.value}</div>
+            <div className="text-xs text-slate-500">{k.label}</div>
+          </div>
+        ))}
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition print-shadow">
+          <div className="bg-purple-500 w-10 h-10 rounded-lg flex items-center justify-center mb-2">
+            <Users className="text-white w-5 h-5" />
+          </div>
+          <div className="text-2xl font-bold text-slate-800">{avgPerEvent}</div>
+          <div className="text-xs text-slate-500">{t("avgPerEvent")}</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-4 shadow-sm mb-6 avoid-break print-shadow">
+        <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2">
+          <CalendarDays className="w-4 h-4" style={{ color: RED }} /> {t("statsReport")}
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 no-print">
+          {Object.keys(periodLabels).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setPeriodMode(mode)}
+              className="rounded-xl px-4 py-3 font-medium text-sm transition"
+              style={
+                periodMode === mode
+                  ? { backgroundColor: RED, color: "white" }
+                  : { backgroundColor: BEIGE, color: RED_DEEP }
+              }
+            >
+              {t(mode)}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: `4px solid ${RED}` }}>
+            <div className="text-xs text-slate-500 mb-1">{t("periods")} ({t(periodMode)} {t("report")})</div>
+            <div className="text-2xl font-bold" style={{ color: RED_DEEP }}>{groupList.length}</div>
+          </div>
+          <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: "4px solid #7c3aed" }}>
+            <div className="text-xs text-slate-500 mb-1">{t("totalVisitors")}</div>
+            <div className="text-2xl font-bold text-purple-700">{totals.visitors.toLocaleString("en-US")}</div>
+          </div>
+          <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: "4px solid #0891b2" }}>
+            <div className="text-xs text-slate-500 mb-1">{t("totalPatients")}</div>
+            <div className="text-2xl font-bold text-cyan-700">{totals.patients.toLocaleString("en-US")}</div>
+          </div>
+          <div className="rounded-xl p-4" style={{ backgroundColor: BEIGE, borderLeft: "4px solid #10b981" }}>
+            <div className="text-xs text-slate-500 mb-1">{t("avgPerEvent")}</div>
+            <div className="text-2xl font-bold text-emerald-700">{avgPerEvent}</div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border" style={{ borderColor: BEIGE_DEEP }}>
+          <table className="w-full text-sm text-left">
+            <thead style={{ backgroundColor: RED }}>
+              <tr className="text-white">
+                <th className="px-3 py-3 font-medium">{t(periodMode)} {t("report")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("records")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("visitors")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("patients")}</th>
+                <th className="px-3 py-3 font-medium text-center">{t("transferredShort")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groupList.map((g, i) => (
+                <tr key={g.key} style={{ backgroundColor: i % 2 ? BEIGE : "white" }}>
+                  <td className="px-3 py-2 font-medium" style={{ color: RED_DEEP }}>{g.key}</td>
+                  <td className="px-3 py-2 text-center">{g.records}</td>
+                  <td className="px-3 py-2 text-center text-purple-700 font-semibold">{g.visitors.toLocaleString("en-US")}</td>
+                  <td className="px-3 py-2 text-center">{g.patients.toLocaleString("en-US")}</td>
+                  <td className="px-3 py-2 text-center text-red-600 font-medium">{g.transferred}</td>
+                </tr>
+              ))}
+              {groupList.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-3 py-6 text-center text-slate-400">{t("noData")}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 avoid-break">
+        <div className="bg-white rounded-xl p-4 shadow-sm print-shadow">
+          <h3 className="font-bold text-slate-700 mb-3">{t("visitorsPatientsChart")}</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <ComposedChart data={chartData}>
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Legend />
+              <Bar yAxisId="left" dataKey="Patients" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="left" dataKey="Transferred" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="right" dataKey="Visitors" fill="#a855f7" radius={[4, 4, 0, 0]} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm print-shadow">
+          <h3 className="font-bold text-slate-700 mb-3">{t("staffDistribution")}</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie data={staffData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                {staffData.map((e, i) => (
+                  <Cell key={i} fill={COLORS[i]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-4 shadow-sm mb-6 no-print">
+        <h3 className="font-bold text-slate-700 mb-3">{t("addRecord")}</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          {inputs.map((inp) => (
+            <input
+              key={inp.k}
+              type={inp.t}
+              lang="en"
+              step="0.1"
+              placeholder={inp.p}
+              value={form[inp.k]}
+              onChange={(e) => setForm({ ...form, [inp.k]: e.target.value })}
+              className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+              style={{ borderColor: BEIGE_DEEP }}
+            />
+          ))}
+          <button
+            onClick={addRow}
+            className="rounded-lg px-4 py-2 flex items-center justify-center gap-1 text-sm font-medium text-white"
+            style={{ backgroundColor: RED }}
+          >
+            <Plus className="w-4 h-4" /> {t("add")}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto avoid-break print-shadow">
+        <table className="w-full text-sm text-left">
+          <thead style={{ backgroundColor: RED }}>
+            <tr className="text-white">
+              {[t("date"), t("event"), t("events"), t("visitors"), t("paramedics"), t("nurses"), t("doctors"), t("ambulances"), t("golfCarts"), t("clinics"), t("patients"), t("transferredShort"), t("workingHours"), t("treatedOnSite"), t("treatedClinic"), ""].map((h, i) => (
+                <th key={i} className="px-3 py-3 font-medium whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={r.id} style={{ backgroundColor: i % 2 ? BEIGE : "white" }}>
+                <EditCell id={r.id} field="date" value={r.date} align="left" type="date" />
+                <EditCell id={r.id} field="event" value={r.event} align="left" type="text" />
+                <EditCell id={r.id} field="events" value={r.events} />
+                <EditCell id={r.id} field="visitors" value={r.visitors} />
+                <EditCell id={r.id} field="paramedics" value={r.paramedics} />
+                <EditCell id={r.id} field="nurses" value={r.nurses} />
+                <EditCell id={r.id} field="doctors" value={r.doctors} />
+                <EditCell id={r.id} field="ambulances" value={r.ambulances} />
+                <EditCell id={r.id} field="golf" value={r.golf} />
+                <EditCell id={r.id} field="clinics" value={r.clinics} />
+                <EditCell id={r.id} field="patients" value={r.patients} />
+                <EditCell id={r.id} field="transferred" value={r.transferred} />
+                <EditCell id={r.id} field="working_hours" value={r.working_hours} />
+                <EditCell id={r.id} field="treated_onsite" value={r.treated_onsite} />
+                <EditCell id={r.id} field="treated_clinic" value={r.treated_clinic} />
+                <td className="px-3 py-2 text-center no-print">
+                  <button onClick={() => delRow(r.id)} className="text-red-400 hover:text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot style={{ backgroundColor: BEIGE_DEEP }} className="font-bold">
+            <tr>
+              <td className="px-3 py-3" colSpan={2}>{t("total")}</td>
+              <td className="px-3 py-3 text-center">{totals.events}</td>
+              <td className="px-3 py-3 text-center text-purple-700">{totals.visitors.toLocaleString("en-US")}</td>
+              <td className="px-3 py-3 text-center">{totals.paramedics}</td>
+              <td className="px-3 py-3 text-center">{totals.nurses}</td>
+              <td className="px-3 py-3 text-center">{totals.doctors}</td>
+              <td className="px-3 py-3 text-center">{totals.ambulances}</td>
+              <td className="px-3 py-3 text-center">{totals.golf}</td>
+              <td className="px-3 py-3 text-center">{totals.clinics}</td>
+              <td className="px-3 py-3 text-center">{totals.patients}</td>
+              <td className="px-3 py-3 text-center text-red-600">{totals.transferred}</td>
+              <td className="px-3 py-3 text-center">{totals.workingHours}</td>
+              <td className="px-3 py-3 text-center">{totals.treatedOnSite}</td>
+              <td className="px-3 py-3 text-center">{totals.treatedClinic}</td>
+              <td className="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setCheckingAuth(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-slate-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
+
+  return <KPIDashboard onLogout={() => supabase.auth.signOut()} />;
+}
