@@ -197,7 +197,8 @@ function KPIDashboard({ onLogout }) {
 
   const startEdit = (id, field, value) => {
     setEditing({ id, field });
-    setEditValue(value ?? "");
+    const isText = field === "date" || field === "event";
+    setEditValue(isText ? value ?? "" : "");
   };
 
   const cancelEdit = () => {
@@ -209,6 +210,10 @@ function KPIDashboard({ onLogout }) {
     if (!editing) return;
     const { id, field } = editing;
     const isText = field === "date" || field === "event";
+    if (!isText && editValue.trim() === "") {
+      cancelEdit();
+      return;
+    }
     const newValue = isText ? editValue : num(editValue);
 
     const { error } = await supabase
@@ -244,6 +249,7 @@ function KPIDashboard({ onLogout }) {
               lang="en"
               inputMode={type === "number" ? "decimal" : undefined}
               step="0.1"
+              placeholder={String(value ?? "")}
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onKeyDown={handleEditKeyDown}
